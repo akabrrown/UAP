@@ -1,0 +1,22 @@
+{
+  "name": "uap",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.21.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "db:start": "node scripts/dev-db.mjs start",
+    "db:stop": "node scripts/dev-db.mjs stop",
+    "db:migrate": "pnpm --filter @uap/database migrate",
+    "db:reset": "pnpm --filter @uap/database reset",
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.0"
+  }
+}

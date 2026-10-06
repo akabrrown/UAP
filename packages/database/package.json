@@ -1,0 +1,18 @@
+{
+  "name": "@uap/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "migrate": "node src/migrate.mjs",
+    "reset": "node src/migrate.mjs --reset",
+    "test": "node --test tests/"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.3",
+    "pg": "^8.13.0"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.11"
+  }
+}
