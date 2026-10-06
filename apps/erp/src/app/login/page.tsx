@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { loginAction } from "./actions";
 import { Eye, EyeOff } from "lucide-react";
+import Image from "next/image";
 
 export default function LoginPage() {
   const [state, formAction, isPending] = useActionState(loginAction, null);
@@ -12,8 +13,14 @@ export default function LoginPage() {
     <main className="min-h-screen flex items-center justify-center bg-canvas p-4">
       <div className="w-full max-w-[400px] bg-white rounded-[6px] shadow-overlay border border-slate-200 overflow-hidden">
         <div className="bg-navy-950 p-8 text-center border-b border-gold-500/20">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-navy-900 mb-4 border border-navy-800">
-            <span className="text-gold-500 font-bold text-lg">UAP</span>
+          <div className="relative inline-block w-16 h-16 rounded-full overflow-hidden mb-4 border-2 border-navy-800 shadow-sm">
+            <Image 
+              src="/logo.jpg" 
+              alt="UPSA Assembly Logo" 
+              fill 
+              className="object-cover" 
+              sizes="64px"
+            />
           </div>
           <h1 className="text-xl font-semibold text-white">UPSA Assembly</h1>
           <p className="text-navy-100 text-sm mt-1">Sign in to your account</p>

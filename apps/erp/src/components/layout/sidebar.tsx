@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { visibleNav } from "@/lib/nav";
 import { hasAnyScope, type Session } from "@/lib/session-utils";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 export function Sidebar({ session }: { session: Session }) {
   const pathname = usePathname();
@@ -16,8 +17,14 @@ export function Sidebar({ session }: { session: Session }) {
     <aside className="w-[240px] flex-shrink-0 bg-navy-900 text-white flex flex-col h-full border-r border-navy-800">
       {/* Logo Area */}
       <div className="h-14 flex items-center px-4 font-semibold text-lg border-b border-navy-800 shrink-0">
-        <div className="w-8 h-8 rounded-full bg-navy-800 border border-gold-500/30 flex items-center justify-center mr-3 shrink-0">
-          <span className="text-gold-500 text-xs font-bold">UAP</span>
+        <div className="relative w-8 h-8 rounded-full bg-navy-800 overflow-hidden border border-gold-500/30 flex items-center justify-center mr-3 shrink-0">
+          <Image 
+            src="/logo.jpg" 
+            alt="UPSA Assembly Logo" 
+            fill 
+            className="object-cover" 
+            sizes="32px"
+          />
         </div>
         <span className="truncate">UPSA Assembly Unit</span>
       </div>
