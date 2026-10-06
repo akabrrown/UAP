@@ -2,8 +2,10 @@
 
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
+import { requireAnyScope } from "@/lib/session";
 
 export async function createItemAction(prevState: any, formData: FormData) {
+  await requireAnyScope(["catalogue.write"]);
   const sku = formData.get("sku")?.toString();
   const name = formData.get("name")?.toString();
   const description = formData.get("description")?.toString() || null;

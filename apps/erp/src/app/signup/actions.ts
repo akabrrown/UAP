@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createSessionCookie } from "@/lib/session";
 import { SCOPES } from "@uap/types";
-import pg from "pg";
+import { db } from "@/lib/db";
 
 export async function signupAction(prevState: any, formData: FormData) {
   const email = formData.get("email")?.toString();
@@ -15,9 +15,6 @@ export async function signupAction(prevState: any, formData: FormData) {
   }
 
   try {
-    const client = new pg.Client({ connectionString: process.env.DATABASE_URL || "postgres://postgres@127.0.0.1:54329/uap" });
-    await client.connect();
-
     try {
       const authUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/signup`;
       const authRes = await fetch(authUrl, {
@@ -38,7 +35,7 @@ export async function signupAction(prevState: any, formData: FormData) {
       const userId = authData.user.id;
 
       // Ensure profile exists and is admin
-      await client.query(`
+      await db.query(`
         insert into core.profiles (id, full_name, is_admin, status)
         values ($1, $2, true, 'active')
         on conflict (id) do update set is_admin = true, status = 'active'
@@ -53,7 +50,7 @@ export async function signupAction(prevState: any, formData: FormData) {
       });
       
     } finally {
-      await client.end();
+      // no-op, pool handles connections
     }
   } catch (err: any) {
     console.error(err);

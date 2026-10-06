@@ -2,11 +2,10 @@
 
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
+import { requireAnyScope } from "@/lib/session";
 
 export async function createInvoiceAction(prevState: any, formData: FormData) {
-  const session = await getSession();
-  if (!session) return { error: "Unauthorized" };
+  const session = await requireAnyScope(["finance.write"]);
 
   const customer_id = formData.get("customer_id")?.toString();
   const due_date = formData.get("due_date")?.toString();

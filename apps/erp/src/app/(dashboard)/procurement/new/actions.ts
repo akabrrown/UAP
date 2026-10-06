@@ -2,8 +2,10 @@
 
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
+import { requireAnyScope } from "@/lib/session";
 
 export async function createPurchaseOrderAction(prevState: any, formData: FormData) {
+  await requireAnyScope(["procurement.write"]);
   const supplier_id = formData.get("supplier_id")?.toString();
   const currency = formData.get("currency")?.toString();
   const expected_arrival = formData.get("expected_arrival")?.toString() || null;

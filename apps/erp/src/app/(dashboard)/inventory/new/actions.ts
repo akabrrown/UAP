@@ -2,8 +2,10 @@
 
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
+import { requireAnyScope } from "@/lib/session";
 
 export async function createTransferAction(prevState: any, formData: FormData) {
+  await requireAnyScope(["inventory.write"]);
   const from_location_id = formData.get("from_location_id")?.toString() || null;
   const to_location_id = formData.get("to_location_id")?.toString();
 

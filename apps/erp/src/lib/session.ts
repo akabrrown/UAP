@@ -73,3 +73,17 @@ export async function getSession(): Promise<Session | null> {
 }
 
 export { hasAnyScope } from "./session-utils";
+
+export async function requireAnyScope(scopes?: readonly Scope[]): Promise<Session> {
+  const session = await getSession();
+  if (!session) {
+    throw new Error("Unauthorized");
+  }
+  if (scopes && scopes.length > 0) {
+    const hasScope = scopes.some(scope => session.scopes.includes(scope));
+    if (!hasScope) {
+      throw new Error("Forbidden: Missing required scope");
+    }
+  }
+  return session;
+}

@@ -3,7 +3,7 @@
 import { getSession, createSessionCookie } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { SCOPES } from "@uap/types";
-import pg from "pg";
+import { db } from "@/lib/db";
 
 export async function loginAction(prevState: any, formData: FormData) {
   const email = formData.get("email")?.toString();
@@ -14,11 +14,6 @@ export async function loginAction(prevState: any, formData: FormData) {
   }
 
   try {
-    // Development stub authentication: Verify against the local database directly
-    // In production, this would call Supabase GoTrue API or NextAuth
-    const client = new pg.Client({ connectionString: process.env.DATABASE_URL || "postgres://postgres@127.0.0.1:54329/uap" });
-    await client.connect();
-
     try {
       // 1. Verify password via Supabase Auth REST API
       const authUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token?grant_type=password`;
@@ -39,7 +34,7 @@ export async function loginAction(prevState: any, formData: FormData) {
       const userId = authData.user.id;
 
       // 2. Fetch their profile and roles from the database
-      const result = await client.query(`
+      const result = await db.query(`
         select p.id, p.full_name, p.is_admin, p.status,
                coalesce((select array_agg(r.code) from core.user_roles ur join core.roles r on r.id = ur.role_id where ur.user_id = p.id), '{}') as roles,
                coalesce((select array_agg(distinct s) from (
@@ -69,7 +64,7 @@ export async function loginAction(prevState: any, formData: FormData) {
       });
 
     } finally {
-      await client.end();
+      // no-op, pool handles connections
     }
   } catch (err: any) {
     console.error(err);

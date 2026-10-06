@@ -2,11 +2,10 @@
 
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
+import { requireAnyScope } from "@/lib/session";
 
 export async function createAssemblyOrderAction(prevState: any, formData: FormData) {
-  const session = await getSession();
-  if (!session) return { error: "Unauthorized" };
+  const session = await requireAnyScope(["production.write"]);
 
   const bom_id = formData.get("bom_id")?.toString();
   const qty = formData.get("qty")?.toString();

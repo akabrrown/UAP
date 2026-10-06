@@ -2,11 +2,10 @@
 
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
+import { requireAnyScope } from "@/lib/session";
 
 export async function createInternalOrderAction(prevState: any, formData: FormData) {
-  const session = await getSession();
-  if (!session) return { error: "Unauthorized" };
+  const session = await requireAnyScope(["sales.write"]);
 
   const account_id = formData.get("account_id")?.toString();
   const purpose = formData.get("purpose")?.toString();

@@ -2,8 +2,10 @@
 
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
+import { requireAnyScope } from "@/lib/session";
 
 export async function createTicketAction(prevState: any, formData: FormData) {
+  await requireAnyScope(["service.write"]);
   const kind = formData.get("kind")?.toString();
   const priority = formData.get("priority")?.toString();
   const contact_name = formData.get("contact_name")?.toString();
