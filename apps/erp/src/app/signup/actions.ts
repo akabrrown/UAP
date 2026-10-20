@@ -14,6 +14,12 @@ export async function signupAction(prevState: any, formData: FormData) {
     return { error: "All fields are required." };
   }
 
+  // Server-side guard: Only allow one-time setup if no profiles exist
+  const existingAdmin = await db.query("select 1 from core.profiles limit 1");
+  if (existingAdmin.rowCount && existingAdmin.rowCount > 0) {
+    return { error: "System is already initialized. Registration is disabled." };
+  }
+
   try {
     try {
       const authUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/signup`;
@@ -34,12 +40,11 @@ export async function signupAction(prevState: any, formData: FormData) {
       const authData = await authRes.json();
       const userId = authData.user.id;
 
-      // Ensure profile exists and is admin
       await db.query(`
-        insert into core.profiles (id, full_name, is_admin, status)
-        values ($1, $2, true, 'active')
+        insert into core.profiles (id, full_name, email, is_admin, status)
+        values ($1, $2, $3, true, 'active')
         on conflict (id) do update set is_admin = true, status = 'active'
-      `, [userId, fullName]);
+      `, [userId, fullName, email]);
 
       await createSessionCookie({
         userId: userId,

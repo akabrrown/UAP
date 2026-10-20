@@ -1,93 +1,116 @@
 import { db } from "@/lib/db";
-import { Plus, Search, Filter } from "lucide-react";
-import Link from "next/link";
+import { requireAnyScope } from "@/lib/session";
+import { InventoryClient } from "./InventoryClient";
 
 export default async function InventoryPage() {
-  const result = await db.query(`
-    select t.id, t.transfer_no, t.status, 
-           l1.name as from_location, l2.name as to_location
-    from inv.transfers t
-    left join core.locations l1 on l1.id = t.from_location_id
-    left join core.locations l2 on l2.id = t.to_location_id
-    order by t.transfer_no desc
-  `);
-  
-  const transfers = result.rows;
+  await requireAnyScope(["inventory.read"]);
+
+  const [balancesRes, movementsRes, transfersRes] = await Promise.all([
+    // Live stock balance grouped by item and location
+    db.query(`
+      SELECT 
+        i.id as item_id,
+        i.sku,
+        i.name as item_name,
+        i.uom,
+        l.id as location_id,
+        l.name as location_name,
+        l.kind as location_kind,
+        COALESCE(sum(sl.qty), 0)::numeric as on_hand_qty,
+        COALESCE((
+          SELECT sum(r.qty) 
+          FROM inv.reservations r 
+          WHERE r.item_id = i.id 
+            AND (r.location_id IS NULL OR r.location_id = l.id) 
+            AND r.status = 'active'
+        ), 0)::numeric as reserved_qty,
+        COALESCE(i.list_price_minor, 0)::bigint as unit_cost_minor
+      FROM catalog.items i
+      CROSS JOIN core.locations l
+      LEFT JOIN inv.stock_ledger sl ON sl.item_id = i.id AND sl.location_id = l.id
+      WHERE l.active = true
+      GROUP BY i.id, i.sku, i.name, i.uom, l.id, l.name, l.kind, i.list_price_minor
+      HAVING COALESCE(sum(sl.qty), 0) > 0 OR COALESCE((
+          SELECT sum(r.qty) 
+          FROM inv.reservations r 
+          WHERE r.item_id = i.id 
+            AND (r.location_id IS NULL OR r.location_id = l.id) 
+            AND r.status = 'active'
+        ), 0) > 0
+      ORDER BY i.sku ASC, l.name ASC
+    `),
+
+    // Recent stock ledger transactions
+    db.query(`
+      SELECT 
+        sl.id::text,
+        sl.posted_at,
+        sl.movement_type,
+        sl.qty::numeric,
+        sl.unit_cost_minor,
+        sl.ref_type,
+        i.sku,
+        i.name as item_name,
+        l.name as location_name
+      FROM inv.stock_ledger sl
+      JOIN catalog.items i ON i.id = sl.item_id
+      JOIN core.locations l ON l.id = sl.location_id
+      ORDER BY sl.posted_at DESC
+      LIMIT 50
+    `),
+
+    // Transfers list
+    db.query(`
+      SELECT 
+        t.id, t.transfer_no, t.status, t.created_at,
+        l1.name as from_location, 
+        l2.name as to_location,
+        COALESCE((SELECT count(*) FROM inv.transfer_lines tl WHERE tl.transfer_id = t.id), 0)::int as line_count
+      FROM inv.transfers t
+      LEFT JOIN core.locations l1 ON l1.id = t.from_location_id
+      LEFT JOIN core.locations l2 ON l2.id = t.to_location_id
+      ORDER BY t.transfer_no DESC
+      LIMIT 50
+    `),
+  ]);
+
+  const stockBalances = balancesRes.rows.map((row) => ({
+    ...row,
+    on_hand_qty: Number(row.on_hand_qty),
+    reserved_qty: Number(row.reserved_qty),
+    unit_cost_minor: Number(row.unit_cost_minor),
+  }));
+
+  const stockMovements = movementsRes.rows.map((row) => ({
+    ...row,
+    posted_at: row.posted_at.toISOString(),
+    qty: Number(row.qty),
+    unit_cost_minor: row.unit_cost_minor ? Number(row.unit_cost_minor) : null,
+  }));
+
+  const transfers = transfersRes.rows.map((row) => ({
+    ...row,
+    created_at: row.created_at.toISOString(),
+    line_count: Number(row.line_count),
+  }));
+
+  // Calculate metrics
+  const uniqueSkus = new Set(stockBalances.filter((b) => b.on_hand_qty > 0).map((b) => b.sku)).size;
+  const totalOnHand = stockBalances.reduce((acc, b) => acc + b.on_hand_qty, 0);
+  const totalReserved = stockBalances.reduce((acc, b) => acc + b.reserved_qty, 0);
+  const inTransitTransfers = transfers.filter((t) => t.status === "in_transit").length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-ink tracking-tight">Stock Transfers</h1>
-          <p className="text-sm text-slate-500">Manage internal stock movements across locations.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link href="/inventory/new" className="h-9 px-4 bg-navy-900 hover:bg-navy-800 text-white text-sm font-medium rounded-[4px] transition-colors flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            New Transfer
-          </Link>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-[8px] border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-        {/* Toolbar */}
-        <div className="px-4 py-3 border-b border-slate-200 flex items-center gap-4 bg-slate-50/50">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="Search transfers..." 
-              className="w-full h-9 pl-9 pr-3 rounded-[4px] border border-slate-300 focus:border-navy-800 focus:ring-1 focus:ring-navy-800 outline-none transition-colors text-sm"
-            />
-          </div>
-          <button className="h-9 px-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-[4px] transition-colors flex items-center gap-2">
-            <Filter className="w-4 h-4" />
-            Filters
-          </button>
-        </div>
-
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-              <tr>
-                <th className="px-4 py-3 font-medium">Transfer No</th>
-                <th className="px-4 py-3 font-medium">From Location</th>
-                <th className="px-4 py-3 font-medium">To Location</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {transfers.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-slate-500">
-                    No transfers found.
-                  </td>
-                </tr>
-              ) : (
-                transfers.map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-4 py-3 font-mono text-xs text-navy-800">{t.transfer_no}</td>
-                    <td className="px-4 py-3 text-ink">{t.from_location || "—"}</td>
-                    <td className="px-4 py-3 text-ink">{t.to_location || "—"}</td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700 capitalize">
-                        {t.status.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link href={`/inventory/${t.id}`} className="text-gold-600 hover:text-gold-700 font-medium">
-                        View
-                      </Link>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    <InventoryClient
+      stockBalances={stockBalances}
+      stockMovements={stockMovements}
+      transfers={transfers}
+      metrics={{
+        totalSkus: uniqueSkus,
+        totalOnHand,
+        totalReserved,
+        inTransitTransfers,
+      }}
+    />
   );
 }

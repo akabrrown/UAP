@@ -16,7 +16,7 @@ export async function sendEmail({
 }) {
   try {
     const data = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'UAP <noreply@uap.edu.gh>',
+      from: process.env.RESEND_FROM_EMAIL || 'Techcore <noreply@techcore.upsa.edu.gh>',
       to,
       subject,
       ...(react ? { react } : { text: text || '' }),

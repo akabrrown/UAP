@@ -17,8 +17,8 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: { default: "UPSA Assembly Platform", template: "%s · UAP" },
-  description: "Internal operations platform for the UPSA Computer Assembly Unit.",
+  title: { default: "Techcore", template: "%s · Techcore" },
+  description: "Internal operations platform for Techcore.",
   robots: { index: false, follow: false },
 };
 

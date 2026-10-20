@@ -1,98 +1,74 @@
 import { db } from "@/lib/db";
-import { Plus, Search, Filter } from "lucide-react";
-import Link from "next/link";
+import { requireAnyScope } from "@/lib/session";
+import FinanceClient, { InvoiceRow, PaymentRow, ExpenseRow } from "./FinanceClient";
 
 export default async function FinancePage() {
-  const result = await db.query(`
-    select i.id, i.invoice_no, i.status, i.total_minor, i.currency, i.due_date,
-           a.name as customer_name
-    from fin.invoices i
-    join core.customer_accounts a on a.id = i.customer_id
-    order by i.invoice_no desc
-  `);
-  
-  const invoices = result.rows;
+  await requireAnyScope(["invoices.write", "payments.write", "gl.read", "expenses.submit", "budgets.write"]);
+
+  const [invoicesRes, paymentsRes, expensesRes, accountsRes, categoriesRes] = await Promise.all([
+    db.query<InvoiceRow>(`
+      SELECT 
+        i.id, 
+        i.invoice_no, 
+        i.status, 
+        i.total_minor, 
+        i.currency, 
+        i.due_date,
+        coalesce(a.name, 'Unknown Account') as customer_name
+      FROM fin.invoices i
+      LEFT JOIN core.customer_accounts a ON a.id = i.account_id
+      ORDER BY i.invoice_no DESC
+      LIMIT 100
+    `),
+    db.query<PaymentRow>(`
+      SELECT 
+        p.id, 
+        p.payment_no, 
+        p.direction, 
+        p.method, 
+        p.amount_minor, 
+        p.currency, 
+        p.status,
+        p.reference, 
+        p.paid_on,
+        coalesce(a.name, s.name, 'General') as party_name
+      FROM fin.payments p
+      LEFT JOIN core.customer_accounts a ON a.id = p.party_id AND p.party_type = 'customer'
+      LEFT JOIN proc.suppliers s ON s.id = p.party_id AND p.party_type = 'supplier'
+      ORDER BY p.paid_on DESC
+      LIMIT 100
+    `),
+    db.query<ExpenseRow>(`
+      SELECT 
+        e.id, 
+        e.expense_no, 
+        e.amount_minor, 
+        e.currency, 
+        e.paid_to, 
+        e.expense_date, 
+        e.status, 
+        e.notes,
+        coalesce(c.name, 'Uncategorized') as category_name
+      FROM fin.expenses e
+      LEFT JOIN fin.expense_categories c ON c.id = e.category_id
+      ORDER BY e.expense_date DESC
+      LIMIT 100
+    `),
+    db.query<{ id: string; name: string }>(`
+      SELECT id, name FROM core.customer_accounts ORDER BY name ASC
+    `),
+    db.query<{ id: string; name: string }>(`
+      SELECT id, name FROM fin.expense_categories ORDER BY name ASC
+    `)
+  ]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-ink tracking-tight">Invoices</h1>
-          <p className="text-sm text-slate-500">Manage internal accounts and billing.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link href="/finance/invoices/new" className="h-9 px-4 bg-navy-900 hover:bg-navy-800 text-white text-sm font-medium rounded-[4px] transition-colors flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Create Invoice
-          </Link>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-[8px] border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-        {/* Toolbar */}
-        <div className="px-4 py-3 border-b border-slate-200 flex items-center gap-4 bg-slate-50/50">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="Search invoices by number or customer..." 
-              className="w-full h-9 pl-9 pr-3 rounded-[4px] border border-slate-300 focus:border-navy-800 focus:ring-1 focus:ring-navy-800 outline-none transition-colors text-sm"
-            />
-          </div>
-          <button className="h-9 px-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-[4px] transition-colors flex items-center gap-2">
-            <Filter className="w-4 h-4" />
-            Filters
-          </button>
-        </div>
-
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-              <tr>
-                <th className="px-4 py-3 font-medium">Invoice Number</th>
-                <th className="px-4 py-3 font-medium">Customer</th>
-                <th className="px-4 py-3 font-medium text-right">Total Amount</th>
-                <th className="px-4 py-3 font-medium">Due Date</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {invoices.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-slate-500">
-                    No invoices found.
-                  </td>
-                </tr>
-              ) : (
-                invoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-4 py-3 font-mono text-xs text-navy-800">{inv.invoice_no}</td>
-                    <td className="px-4 py-3 text-ink font-medium">{inv.customer_name}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      {inv.currency} {(inv.total_minor / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">
-                      {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : "—"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700 capitalize">
-                        {inv.status.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link href={`/finance/invoices/${inv.id}`} className="text-gold-600 hover:text-gold-700 font-medium">
-                        View
-                      </Link>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    <FinanceClient
+      initialInvoices={invoicesRes.rows}
+      initialPayments={paymentsRes.rows}
+      initialExpenses={expensesRes.rows}
+      accounts={accountsRes.rows}
+      categories={categoriesRes.rows}
+    />
   );
 }

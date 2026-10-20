@@ -10,6 +10,6 @@ test.describe('Authentication and Core Flows', () => {
     
     // The login form should be visible
     await expect(page.locator('form')).toBeVisible();
-    await expect(page.getByRole('heading', { name: /UPSA Assembly/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Techcore/i })).toBeVisible();
   });
 });

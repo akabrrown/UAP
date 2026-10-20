@@ -7,7 +7,16 @@ export default async function SignupPage() {
   const session = await getSession();
   
   if (session) {
-    redirect("/dashboard");
+    redirect("/");
+  }
+
+  // Check if system is already initialized (any profile exists)
+  // We use db.query instead of a dedicated function for this simple check.
+  const { db } = await import("@/lib/db");
+  const result = await db.query(`select 1 from core.profiles limit 1`);
+  if (result.rowCount && result.rowCount > 0) {
+    // System is initialized, disable new signups
+    redirect("/login");
   }
 
   return (
@@ -17,7 +26,7 @@ export default async function SignupPage() {
           <div className="relative inline-block w-16 h-16 rounded-full overflow-hidden border-2 border-navy-800 shadow-sm mx-auto mb-4">
             <Image 
               src="/logo.jpg" 
-              alt="UPSA Assembly Logo" 
+              alt="Techcore Logo" 
               fill 
               className="object-cover" 
               sizes="64px"

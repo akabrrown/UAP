@@ -35,7 +35,7 @@ export async function loginAction(prevState: any, formData: FormData) {
 
       // 2. Fetch their profile and roles from the database
       const result = await db.query(`
-        select p.id, p.full_name, p.is_admin, p.status,
+        select p.id, p.full_name, p.email, p.staff_no, p.is_admin, p.status,
                coalesce((select array_agg(r.code) from core.user_roles ur join core.roles r on r.id = ur.role_id where ur.user_id = p.id), '{}') as roles,
                coalesce((select array_agg(distinct s) from (
                  select unnest(r.default_scopes) as s from core.user_roles ur join core.roles r on r.id = ur.role_id where ur.user_id = p.id
@@ -61,6 +61,7 @@ export async function loginAction(prevState: any, formData: FormData) {
         fullName: user.full_name,
         role: user.is_admin ? "super_admin" : (user.roles[0] || "assembly_technician"),
         scopes: user.is_admin ? [...SCOPES] : user.scopes,
+        staffNo: user.staff_no || null,
       });
 
     } finally {

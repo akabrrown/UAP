@@ -1,8 +1,19 @@
 import { db } from "@/lib/db";
-import { Search, Filter, CheckCircle, XCircle } from "lucide-react";
+import { Search, Filter } from "lucide-react";
 import Link from "next/link";
+import { requireAnyScope } from "@/lib/session";
+import { ApprovalButtons } from "./approval-buttons";
 
 export default async function ApprovalsPage() {
+  await requireAnyScope([
+    "procurement.approve",
+    "orders.approve",
+    "payments.approve",
+    "expenses.approve",
+    "service.approve",
+    "inventory.adjust.approve",
+    "bom.approve"
+  ]);
   const result = await db.query(`
     select a.id, a.subject_type, a.status, a.amount_minor, a.currency, a.created_at,
            req.full_name as requested_by_name
@@ -77,20 +88,14 @@ export default async function ApprovalsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {a.status === 'pending' ? (
-                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="p-1 hover:bg-slate-200 rounded text-fail transition-colors" title="Reject">
-                            <XCircle className="w-5 h-5" />
-                          </button>
-                          <button className="p-1 hover:bg-slate-200 rounded text-success transition-colors" title="Approve">
-                            <CheckCircle className="w-5 h-5" />
-                          </button>
-                        </div>
-                      ) : (
-                        <Link href={`/approvals/${a.id}`} className="text-gold-600 hover:text-gold-700 font-medium">
-                          View
+                      <div className="flex items-center justify-end gap-3">
+                        {a.status === 'pending' && (
+                          <ApprovalButtons approvalId={a.id} />
+                        )}
+                        <Link href={`/approvals/${a.id}`} className="text-gold-600 hover:text-gold-700 font-medium text-xs">
+                          Details
                         </Link>
-                      )}
+                      </div>
                     </td>
                   </tr>
                 ))

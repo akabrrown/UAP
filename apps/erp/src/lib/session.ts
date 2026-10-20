@@ -23,6 +23,7 @@ export async function createSessionCookie(session: Session): Promise<void> {
     email: session.email,
     role: session.role,
     scopes: [...session.scopes],
+    staffNo: session.staffNo ?? null,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(session.userId)
@@ -66,6 +67,7 @@ export async function getSession(): Promise<Session | null> {
       email: String(payload.email ?? ""),
       role: role as RoleCode,
       scopes: payload.scopes.filter((s): s is Scope => typeof s === "string" && isScope(s)),
+      staffNo: typeof payload.staffNo === "string" ? payload.staffNo : null,
     };
   } catch {
     return null;
@@ -74,13 +76,18 @@ export async function getSession(): Promise<Session | null> {
 
 export { hasAnyScope } from "./session-utils";
 
+import { redirect } from "next/navigation";
+
 export async function requireAnyScope(scopes?: readonly Scope[]): Promise<Session> {
   const session = await getSession();
   if (!session) {
-    throw new Error("Unauthorized");
+    redirect("/login");
   }
   if (scopes && scopes.length > 0) {
-    const hasScope = scopes.some(scope => session.scopes.includes(scope));
+    const hasScope =
+      session.role === "super_admin" ||
+      (session.scopes as string[]).includes("*") ||
+      scopes.some(scope => session.scopes.includes(scope));
     if (!hasScope) {
       throw new Error("Forbidden: Missing required scope");
     }

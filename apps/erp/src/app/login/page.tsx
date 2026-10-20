@@ -16,13 +16,13 @@ export default function LoginPage() {
           <div className="relative inline-block w-16 h-16 rounded-full overflow-hidden mb-4 border-2 border-navy-800 shadow-sm">
             <Image 
               src="/logo.jpg" 
-              alt="UPSA Assembly Logo" 
+              alt="Techcore Logo" 
               fill 
               className="object-cover" 
               sizes="64px"
             />
           </div>
-          <h1 className="text-xl font-semibold text-white">UPSA Assembly</h1>
+          <h1 className="text-xl font-semibold text-white">Techcore</h1>
           <p className="text-navy-100 text-sm mt-1">Sign in to your account</p>
         </div>
         

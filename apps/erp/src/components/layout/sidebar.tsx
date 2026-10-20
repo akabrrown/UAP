@@ -20,17 +20,17 @@ export function Sidebar({ session }: { session: Session }) {
         <div className="relative w-8 h-8 rounded-full bg-navy-800 overflow-hidden border border-gold-500/30 flex items-center justify-center mr-3 shrink-0">
           <Image 
             src="/logo.jpg" 
-            alt="UPSA Assembly Logo" 
+            alt="Techcore Logo" 
             fill 
             className="object-cover" 
             sizes="32px"
           />
         </div>
-        <span className="truncate">UPSA Assembly Unit</span>
+        <span className="truncate">Techcore</span>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4 space-y-6">
+      <nav className="flex-1 overflow-y-auto py-4 space-y-6 no-scrollbar">
         {navGroups.map((group) => (
           <div key={group.label} className="px-3">
             <h3 className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-navy-100/50">
@@ -38,7 +38,9 @@ export function Sidebar({ session }: { session: Session }) {
             </h3>
             <div className="space-y-1">
               {group.items.map((item) => {
-                const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+                const isActive =
+                  pathname === item.href ||
+                  (item.href !== "/" && item.href !== "/admin" && pathname.startsWith(item.href + "/"));
                 const Icon = item.icon;
                 
                 return (
