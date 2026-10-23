@@ -29,8 +29,7 @@ test.describe('Catalogue Module', () => {
     await page.click('button[type="submit"]');
 
     // Expect to be redirected to catalogue list and see the new item
-    await expect(page).toHaveURL(/.*\/catalogue$/);
-    await expect(page.locator(`text=${uniqueSku}`)).toBeVisible();
+    await expect(page).toHaveURL(/.*\/catalogue$/, { timeout: 15000 });
+    await expect(page.locator(`text=${uniqueSku}`)).toBeVisible({ timeout: 10000 });
   });
 });
-

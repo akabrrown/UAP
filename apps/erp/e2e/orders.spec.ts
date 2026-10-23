@@ -21,6 +21,7 @@ test.describe('Sales Orders & Dispatches', () => {
     await newOrderBtn.click();
 
     await expect(page).toHaveURL(/.*\/orders\/new/);
-    await expect(page.getByRole('heading', { name: /Create Internal Order/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /New Internal Order/i })).toBeVisible();
   });
 });
+

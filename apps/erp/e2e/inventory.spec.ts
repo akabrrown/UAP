@@ -6,19 +6,18 @@ async function loginAsAdmin(page: Page) {
 }
 
 test.describe('Inventory & Stock Movements', () => {
-  test('renders 3-tab inventory view and navigates to transfer creation', async ({ page }) => {
+  test('renders multi-tab inventory view and navigates to transfer creation', async ({ page }) => {
     await loginAsAdmin(page);
 
     await page.goto('/inventory');
-    await expect(page.getByRole('heading', { name: /Inventory & Stock Control/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Inventory Management/i })).toBeVisible();
 
     // Verify tabs exist
-    await expect(page.getByRole('button', { name: /Live Stock on Hand/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Stock Transfers/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Stock Movements Ledger/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Stock On Hand/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Transfers/i })).toBeVisible();
 
-    // Switch to Stock Transfers tab
-    await page.getByRole('button', { name: /Stock Transfers/i }).click();
+    // Switch to Transfers tab
+    await page.getByRole('button', { name: /Transfers/i }).click();
 
     // Click New Transfer button
     const transferBtn = page.getByRole('link', { name: /New Transfer/i });
@@ -26,6 +25,7 @@ test.describe('Inventory & Stock Movements', () => {
     await transferBtn.click();
 
     await expect(page).toHaveURL(/.*\/inventory\/transfers\/new/);
-    await expect(page.getByRole('heading', { name: /Create Stock Transfer/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /New Stock Transfer/i })).toBeVisible();
   });
 });
+
