@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
+import { usePerspective } from "@/lib/perspective";
+import type { LucideIcon } from "lucide-react";
 import {
   Shield,
   Briefcase,
@@ -22,7 +23,63 @@ import {
   Activity,
   PlusCircle,
   Eye,
+  Sliders,
+  Scale,
+  PackageSearch,
+  ShoppingCart,
+  BarChart3,
+  Cpu,
+  Building2,
+  History,
 } from "lucide-react";
+
+export const ROLE_WORKFLOW_SHORTCUTS: Record<
+  string,
+  Array<{ title: string; subtitle: string; href: string; icon: LucideIcon }>
+> = {
+  super_admin: [
+    { title: "User & Staff Access", subtitle: "Profiles & scope assignments", href: "/admin/users", icon: Shield },
+    { title: "Approval Rules", subtitle: "Dual-custody limits & matrix", href: "/admin/approval-rules", icon: Sliders },
+    { title: "Audit Trail (Append-only)", subtitle: "Immutable system action log", href: "/admin/audit", icon: History },
+    { title: "System Parameters", subtitle: "Doc counters & config controls", href: "/admin/settings", icon: Activity },
+  ],
+  management: [
+    { title: "Dual-Custody Approvals", subtitle: "Pending PO & variance signoffs", href: "/approvals", icon: AlertCircle },
+    { title: "Shipment Pipelines", subtitle: "Customs transit & vessel tracker", href: "/imports/shipments", icon: Ship },
+    { title: "Live Production Board", subtitle: "WIP throughput & test queues", href: "/production/board", icon: Layers },
+    { title: "Financial & Margin Reports", subtitle: "Executive KPIs and cost trends", href: "/reports", icon: BarChart3 },
+  ],
+  procurement_imports: [
+    { title: "Purchase Orders", subtitle: "Supplier POs & order issuance", href: "/procurement", icon: Truck },
+    { title: "Shipments & Customs", subtitle: "Tracking tracker & clearing status", href: "/imports/shipments", icon: Ship },
+    { title: "Landed Cost Runs", subtitle: "Freight & tariff capitalization", href: "/imports/landed-cost", icon: Scale },
+    { title: "Supplier Directory", subtitle: "Vendor records & bank details", href: "/procurement/suppliers", icon: Building2 },
+  ],
+  inventory_sales: [
+    { title: "Goods Receipts (GRN)", subtitle: "Receiving inspection & lot intake", href: "/procurement/grn", icon: PackageSearch },
+    { title: "Stock on Hand", subtitle: "Warehouse balances & bin allocation", href: "/inventory", icon: Boxes },
+    { title: "Internal Stock Transfers", subtitle: "Inter-location inventory movements", href: "/inventory/transfers", icon: Truck },
+    { title: "Sales Orders", subtitle: "Customer orders & dispatch release", href: "/orders", icon: ShoppingCart },
+  ],
+  finance_service: [
+    { title: "Financial Ledger", subtitle: "General ledger & balance sheets", href: "/finance", icon: Landmark },
+    { title: "Approvals Queue", subtitle: "Payment & expense authorizations", href: "/approvals", icon: AlertCircle },
+    { title: "Service Tickets", subtitle: "Customer RMA & repairs bench", href: "/service", icon: Wrench },
+    { title: "Warranty Directory", subtitle: "Coverage registry & unit serials", href: "/service/warranties", icon: CheckCircle2 },
+  ],
+  assembly_technician: [
+    { title: "Technician Work Queue", subtitle: "Assigned build & assembly tasks", href: "/production/queue", icon: Wrench },
+    { title: "Live Production Board", subtitle: "Assembly stages & WIP tracking", href: "/production/board", icon: Layers },
+    { title: "Assembly Build Orders", subtitle: "Production orders & material lists", href: "/production", icon: Cpu },
+    { title: "Rework Orders", subtitle: "Defect rectification & repair bench", href: "/quality/rework", icon: Sliders },
+  ],
+  qc_inspector: [
+    { title: "Quality Inspections", subtitle: "Unit testing & serial sign-off", href: "/quality/inspections", icon: CheckCircle2 },
+    { title: "Quarantine & Incoming", subtitle: "Goods receiving quarantine review", href: "/procurement/grn", icon: Boxes },
+    { title: "Rework Retest Queue", subtitle: "Post-repair validation & release", href: "/quality/rework", icon: AlertCircle },
+    { title: "Defect Analytics", subtitle: "Yield tracking & failure pareto", href: "/quality/defects", icon: BarChart3 },
+  ],
+};
 
 export interface DashboardMetrics {
   superAdmin: {
@@ -102,7 +159,7 @@ export function DashboardClient({
     return "management";
   };
 
-  const [activeRole, setActiveRole] = useState<string>(normalizeRole(initialRole));
+  const [activeRole, setActiveRole] = usePerspective(normalizeRole(initialRole));
 
   const roles = [
     { id: "super_admin", label: "Super Admin", icon: Shield, badge: "System" },
@@ -130,27 +187,145 @@ export function DashboardClient({
           </p>
         </div>
 
-        {/* Global Quick Action Links */}
+        {/* Role-Specific Quick Action Links */}
         <div className="flex items-center gap-2">
-          <Link
-            href="/approvals"
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded border border-slate-300 hover:bg-slate-50 text-slate-700 transition-colors"
-          >
-            <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
-            <span>Approvals</span>
-            {metrics.management.approvalsWaiting > 0 && (
-              <span className="ml-1 px-1.5 py-0.2 bg-amber-100 text-amber-800 rounded-full font-bold text-[10px]">
-                {metrics.management.approvalsWaiting}
-              </span>
-            )}
-          </Link>
-          <Link
-            href="/orders/new"
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-navy-800 hover:bg-navy-900 text-white transition-colors shadow-sm"
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>New Order</span>
-          </Link>
+          {activeRole === "super_admin" && (
+            <>
+              <Link
+                href="/admin/users"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-navy-800 hover:bg-navy-900 text-white transition-colors shadow-sm"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>Manage Users</span>
+              </Link>
+              <Link
+                href="/admin/approval-rules"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded border border-slate-300 hover:bg-slate-50 text-slate-700 transition-colors"
+              >
+                <Sliders className="w-3.5 h-3.5 text-navy-800" />
+                <span>Approval Rules</span>
+              </Link>
+            </>
+          )}
+
+          {activeRole === "management" && (
+            <>
+              <Link
+                href="/approvals"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded border border-slate-300 hover:bg-slate-50 text-slate-700 transition-colors"
+              >
+                <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                <span>Approvals</span>
+                {metrics.management.approvalsWaiting > 0 && (
+                  <span className="ml-1 px-1.5 py-0.2 bg-amber-100 text-amber-800 rounded-full font-bold text-[10px]">
+                    {metrics.management.approvalsWaiting}
+                  </span>
+                )}
+              </Link>
+              <Link
+                href="/reports"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-navy-800 hover:bg-navy-900 text-white transition-colors shadow-sm"
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                <span>Executive Reports</span>
+              </Link>
+            </>
+          )}
+
+          {activeRole === "procurement_imports" && (
+            <>
+              <Link
+                href="/procurement"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-navy-800 hover:bg-navy-900 text-white transition-colors shadow-sm"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>Purchase Orders</span>
+              </Link>
+              <Link
+                href="/imports/shipments"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded border border-slate-300 hover:bg-slate-50 text-slate-700 transition-colors"
+              >
+                <Ship className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Track Shipments</span>
+              </Link>
+            </>
+          )}
+
+          {activeRole === "inventory_sales" && (
+            <>
+              <Link
+                href="/orders/new"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-navy-800 hover:bg-navy-900 text-white transition-colors shadow-sm"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>New Order</span>
+              </Link>
+              <Link
+                href="/inventory/transfers"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded border border-slate-300 hover:bg-slate-50 text-slate-700 transition-colors"
+              >
+                <Truck className="w-3.5 h-3.5 text-navy-800" />
+                <span>Stock Transfers</span>
+              </Link>
+            </>
+          )}
+
+          {activeRole === "finance_service" && (
+            <>
+              <Link
+                href="/finance"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-navy-800 hover:bg-navy-900 text-white transition-colors shadow-sm"
+              >
+                <Landmark className="w-3.5 h-3.5" />
+                <span>Financial Ledger</span>
+              </Link>
+              <Link
+                href="/service"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded border border-slate-300 hover:bg-slate-50 text-slate-700 transition-colors"
+              >
+                <Wrench className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Service Tickets</span>
+              </Link>
+            </>
+          )}
+
+          {activeRole === "assembly_technician" && (
+            <>
+              <Link
+                href="/production/queue"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-navy-800 hover:bg-navy-900 text-white transition-colors shadow-sm"
+              >
+                <Wrench className="w-3.5 h-3.5" />
+                <span>My Work Queue</span>
+              </Link>
+              <Link
+                href="/production/board"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded border border-slate-300 hover:bg-slate-50 text-slate-700 transition-colors"
+              >
+                <Layers className="w-3.5 h-3.5 text-blue-600" />
+                <span>Assembly Board</span>
+              </Link>
+            </>
+          )}
+
+          {activeRole === "qc_inspector" && (
+            <>
+              <Link
+                href="/quality/inspections"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-navy-800 hover:bg-navy-900 text-white transition-colors shadow-sm"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>QC Inspections</span>
+              </Link>
+              <Link
+                href="/quality/rework"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded border border-slate-300 hover:bg-slate-50 text-slate-700 transition-colors"
+              >
+                <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                <span>Rework Queue</span>
+              </Link>
+            </>
+          )}
         </div>
       </div>
 
@@ -677,53 +852,28 @@ export function DashboardClient({
 
         <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col">
           <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
-            <h2 className="text-sm font-semibold text-ink">Core Workflow Shortcuts</h2>
-            <span className="text-xs text-slate-400">Standard Navigation</span>
+            <h2 className="text-sm font-semibold text-ink">
+              {roles.find(r => r.id === activeRole)?.label || "Role"} Workflow Shortcuts
+            </h2>
+            <span className="text-xs text-slate-400">Navigation for {activeRole.replace("_", " ")}</span>
           </div>
           <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Link
-              href="/imports/shipments"
-              className="p-3.5 rounded-lg border border-slate-200 hover:border-navy-800 hover:bg-slate-50 transition-all flex flex-col gap-1 group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-ink text-sm">Shipments & Customs</span>
-                <Ship className="w-4 h-4 text-slate-400 group-hover:text-navy-800" />
-              </div>
-              <p className="text-xs text-slate-500">Kanban tracker & landed cost</p>
-            </Link>
-
-            <Link
-              href="/production/board"
-              className="p-3.5 rounded-lg border border-slate-200 hover:border-navy-800 hover:bg-slate-50 transition-all flex flex-col gap-1 group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-ink text-sm">Live Production Board</span>
-                <Layers className="w-4 h-4 text-slate-400 group-hover:text-navy-800" />
-              </div>
-              <p className="text-xs text-slate-500">WIP assembly stages & test queue</p>
-            </Link>
-
-            <Link
-              href="/inventory/ledger"
-              className="p-3.5 rounded-lg border border-slate-200 hover:border-navy-800 hover:bg-slate-50 transition-all flex flex-col gap-1 group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-ink text-sm">Stock Ledger (Append-only)</span>
-                <Boxes className="w-4 h-4 text-slate-400 group-hover:text-navy-800" />
-              </div>
-              <p className="text-xs text-slate-500">Immutable inventory audit trail</p>
-            </Link>
-
-            <Link
-              href="/quality/inspections"
-              className="p-3.5 rounded-lg border border-slate-200 hover:border-navy-800 hover:bg-slate-50 transition-all flex flex-col gap-1 group"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-ink text-sm">Quality Inspections</span>
-                <CheckCircle2 className="w-4 h-4 text-slate-400 group-hover:text-navy-800" />
-              </div>
-              <p className="text-xs text-slate-500">Finished computer QC & serial release</p>
-            </Link>
+            {(ROLE_WORKFLOW_SHORTCUTS[activeRole] || ROLE_WORKFLOW_SHORTCUTS.super_admin).map((sc) => {
+              const Icon = sc.icon;
+              return (
+                <Link
+                  key={sc.href + sc.title}
+                  href={sc.href}
+                  className="p-3.5 rounded-lg border border-slate-200 hover:border-navy-800 hover:bg-slate-50 transition-all flex flex-col gap-1 group"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-ink text-sm">{sc.title}</span>
+                    <Icon className="w-4 h-4 text-slate-400 group-hover:text-navy-800" />
+                  </div>
+                  <p className="text-xs text-slate-500">{sc.subtitle}</p>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </div>

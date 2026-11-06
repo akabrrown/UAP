@@ -2,16 +2,34 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { visibleNav } from "@/lib/nav";
-import { hasAnyScope, type Session } from "@/lib/session-utils";
+import { visibleNavForRole } from "@/lib/nav";
+import { usePerspective } from "@/lib/perspective";
+import { type Session } from "@/lib/session-utils";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { Eye, RotateCcw } from "lucide-react";
+
+const ROLE_LABELS: Record<string, string> = {
+  super_admin: "Super Admin",
+  management: "Management",
+  procurement_imports: "Procurement & Imports",
+  inventory_sales: "Inventory & Sales",
+  finance_service: "Finance & Service",
+  assembly_technician: "Assembly Tech",
+  qc_inspector: "QC Inspector",
+};
 
 export function Sidebar({ session }: { session: Session }) {
   const pathname = usePathname();
-  
-  // Filter nav groups based on user scopes
-  const navGroups = visibleNav((item) => hasAnyScope(session, item.anyScope));
+  const [perspective, setPerspective] = usePerspective(session.role);
+
+  // If user is super_admin or management, allow filtering by perspective
+  const isPrivileged = session.role === "super_admin" || session.role === "management";
+  const effectiveRole = isPrivileged && perspective ? perspective : session.role;
+
+  // Filter nav groups strictly based on the chosen role perspective
+  const navGroups = visibleNavForRole(effectiveRole);
+  const isFiltered = isPrivileged && perspective && perspective !== "super_admin";
 
   return (
     <aside className="w-[240px] flex-shrink-0 bg-navy-900 text-white flex flex-col h-full border-r border-navy-800">
@@ -29,6 +47,26 @@ export function Sidebar({ session }: { session: Session }) {
         </div>
         <span className="truncate">Techcore</span>
       </div>
+
+      {/* Role Perspective Indicator (Active when switching role perspective) */}
+      {isFiltered && (
+        <div className="mx-3 mt-3 px-2.5 py-1.5 rounded bg-navy-800/90 border border-gold-500/30 flex items-center justify-between text-xs">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Eye className="w-3.5 h-3.5 text-gold-400 shrink-0" />
+            <span className="truncate text-[11px] font-medium text-gold-300">
+              {ROLE_LABELS[effectiveRole] || effectiveRole}
+            </span>
+          </div>
+          <button
+            onClick={() => setPerspective("super_admin")}
+            title="Reset to Full Navigation"
+            className="text-[10px] text-navy-200 hover:text-white flex items-center gap-0.5 hover:underline shrink-0 font-medium"
+          >
+            <RotateCcw className="w-2.5 h-2.5" />
+            <span>All</span>
+          </button>
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 space-y-6 no-scrollbar">
@@ -68,9 +106,14 @@ export function Sidebar({ session }: { session: Session }) {
         ))}
       </nav>
       
-      {/* User Area - Optional simplified view since Header has user menu */}
-      <div className="p-4 border-t border-navy-800 shrink-0 text-sm text-navy-100/70 truncate">
-        {session.fullName}
+      {/* User Area */}
+      <div className="p-4 border-t border-navy-800 shrink-0 text-sm text-navy-100/70 flex items-center justify-between">
+        <span className="truncate">{session.fullName}</span>
+        {isFiltered && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-gold-500/20 text-gold-300 font-mono">
+            {effectiveRole.split("_")[0]}
+          </span>
+        )}
       </div>
     </aside>
   );
