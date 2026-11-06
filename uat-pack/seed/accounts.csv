@@ -1,0 +1,5 @@
+name,kind,department_code,contact_name,contact_phone,contact_email,cost_centre,credit_limit
+Department of IT,department,DIT,Dr Akua Frimpong,024 000 0011,dit@uap-test.example,CC-IT,100000
+Department of Finance,department,DFIN,Mr Kojo Ansah,024 000 0012,dfin@uap-test.example,CC-FIN,80000
+Registry,unit,REG,Ms Mercy Tagoe,024 000 0013,registry@uap-test.example,CC-ADM,50000
+Mr Daniel Ofori (Staff),staff,,Daniel Ofori,024 000 0014,dofori@uap-test.example,CC-ADM,20000

@@ -30,6 +30,7 @@ export default async function SignupPage() {
               fill 
               className="object-cover" 
               sizes="64px"
+              unoptimized
             />
           </div>
           <h1 className="text-2xl font-semibold text-ink tracking-tight">Create Super Admin</h1>

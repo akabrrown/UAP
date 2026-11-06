@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowRightLeft, Send, CheckCircle, Package } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, Send, CheckCircle, Package, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { requireAnyScope } from "@/lib/session";
-import { shipTransferAction, receiveTransferAction, addTransferLineAction } from "./actions";
+import { shipTransferAction, receiveTransferAction, addTransferLineAction, deleteTransferLineAction } from "./actions";
 
 export default async function TransferDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAnyScope(["inventory.read"]);
@@ -26,15 +26,27 @@ export default async function TransferDetailsPage({ params }: { params: Promise<
   const transfer = result.rows[0];
 
   const linesResult = await db.query(`
-    select tl.*, i.sku, i.name as item_name
+    select tl.*,
+           tl.qty_sent as qty_expected,
+           i.sku,
+           i.name as item_name,
+           l.lot_no
     from inv.transfer_lines tl
     join catalog.items i on i.id = tl.item_id
+    left join inv.lots l on l.id = tl.lot_id
     where tl.transfer_id = $1
     order by tl.created_at asc
   `, [id]);
   const lines = linesResult.rows;
 
   const itemsResult = await db.query(`select id, name, sku from catalog.items order by name`);
+
+  const lotsResult = await db.query(`
+    select l.id, l.lot_no, l.item_id, i.sku
+    from inv.lots l
+    join catalog.items i on i.id = l.item_id
+    order by l.lot_no asc
+  `);
 
   return (
     <div className="space-y-6">
@@ -109,12 +121,18 @@ export default async function TransferDetailsPage({ params }: { params: Promise<
                     <th className="px-4 py-3 font-medium">Item Name</th>
                     <th className="px-4 py-3 font-medium">Lot No</th>
                     <th className="px-4 py-3 font-medium text-right">Qty Expected</th>
+                    {transfer.status === 'received' && (
+                      <th className="px-4 py-3 font-medium text-right">Qty Received</th>
+                    )}
+                    {transfer.status === 'draft' && (
+                      <th className="px-4 py-3 font-medium text-right w-16">Action</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {lines.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-4 py-12 text-center text-slate-500">
+                      <td colSpan={transfer.status === 'received' ? 5 : transfer.status === 'draft' ? 5 : 4} className="px-4 py-12 text-center text-slate-500">
                         No items added to this transfer yet.
                       </td>
                     </tr>
@@ -123,8 +141,30 @@ export default async function TransferDetailsPage({ params }: { params: Promise<
                       <tr key={line.id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="px-4 py-3 font-mono text-xs text-navy-800">{line.sku}</td>
                         <td className="px-4 py-3 text-ink font-medium">{line.item_name}</td>
-                        <td className="px-4 py-3 text-slate-500">{line.lot_no || "—"}</td>
-                        <td className="px-4 py-3 text-right text-slate-700">{Number(line.qty_expected).toFixed(2)}</td>
+                        <td className="px-4 py-3 text-slate-600 font-mono text-xs">{line.lot_no || "—"}</td>
+                        <td className="px-4 py-3 text-right text-slate-700 font-medium">
+                          {Number(line.qty_sent ?? line.qty_expected ?? 0).toFixed(2)}
+                        </td>
+                        {transfer.status === 'received' && (
+                          <td className="px-4 py-3 text-right text-emerald-700 font-medium">
+                            {line.qty_received != null ? Number(line.qty_received).toFixed(2) : Number(line.qty_sent ?? 0).toFixed(2)}
+                          </td>
+                        )}
+                        {transfer.status === 'draft' && (
+                          <td className="px-4 py-3 text-right">
+                            <form action={deleteTransferLineAction} className="inline">
+                              <input type="hidden" name="transfer_id" value={transfer.id} />
+                              <input type="hidden" name="line_id" value={line.id} />
+                              <button
+                                type="submit"
+                                title="Remove item"
+                                className="text-slate-400 hover:text-rose-600 transition-colors p-1"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </form>
+                          </td>
+                        )}
                       </tr>
                     ))
                   )}
@@ -160,8 +200,15 @@ export default async function TransferDetailsPage({ params }: { params: Promise<
                       type="text" 
                       id="lot_no" 
                       name="lot_no" 
+                      list="available-lots"
+                      placeholder="e.g. LOT-2026-001"
                       className="w-full h-10 px-3 rounded-[4px] border border-slate-300 focus:border-navy-800 focus:ring-1 focus:ring-navy-800 outline-none transition-colors text-sm"
                     />
+                    <datalist id="available-lots">
+                      {lotsResult.rows.map(lot => (
+                        <option key={lot.id} value={lot.lot_no}>{lot.sku} — {lot.lot_no}</option>
+                      ))}
+                    </datalist>
                   </div>
                 </div>
                 
@@ -171,10 +218,11 @@ export default async function TransferDetailsPage({ params }: { params: Promise<
                     <input 
                       type="number" 
                       step="0.0001"
-                      min="0"
+                      min="0.0001"
                       id="qty_expected" 
                       name="qty_expected" 
                       required
+                      placeholder="0.00"
                       className="w-full h-10 px-3 rounded-[4px] border border-slate-300 focus:border-navy-800 focus:ring-1 focus:ring-navy-800 outline-none transition-colors text-sm"
                     />
                   </div>

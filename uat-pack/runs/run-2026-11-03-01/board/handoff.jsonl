@@ -1,0 +1,12 @@
+{"ts":"2026-11-03T11:22:06.177Z","role":"PI","step_id":"P2-06","doc_type":"purchase_order","doc_no":"PO-2026-000001","status":"sent","url":"/procurement"}
+{"ts":"2026-11-03T11:22:07.202Z","role":"PI","step_id":"P3-01","doc_type":"shipment","doc_no":"SHP-2026-0001","status":"cleared","url":"/imports/shipments"}
+{"ts":"2026-11-03T11:22:08.016Z","role":"IS","step_id":"P4-05","doc_type":"goods_receipt","doc_no":"GRN-2026-0001","status":"posted","url":"/procurement/grn"}
+{"ts":"2026-11-03T11:22:10.286Z","role":"IS","step_id":"P6-03","doc_type":"assembly_order","doc_no":"AO-2026-0001","status":"released","url":"/production"}
+{"ts":"2026-11-03T11:22:12.370Z","role":"IS","step_id":"P7-04","doc_type":"dispatch","doc_no":"DSP-2026-0001","status":"delivered","url":"/orders"}
+{"ts":"2026-11-03T11:22:12.547Z","role":"FS","step_id":"P7-06","doc_type":"invoice","doc_no":"INV-2026-0001","status":"issued","url":"/finance"}
+{"ts":"2026-11-03T11:38:08.026Z","role":"PI","step_id":"P2-06","doc_type":"purchase_order","doc_no":"PO-2026-000001","status":"sent","url":"/procurement"}
+{"ts":"2026-11-03T11:38:21.100Z","role":"PI","step_id":"P3-01","doc_type":"shipment","doc_no":"SHP-2026-0001","status":"cleared","url":"/imports/shipments"}
+{"ts":"2026-11-03T11:38:38.577Z","role":"IS","step_id":"P4-05","doc_type":"goods_receipt","doc_no":"GRN-2026-0001","status":"posted","url":"/procurement/grn"}
+{"ts":"2026-11-03T11:39:05.857Z","role":"IS","step_id":"P6-03","doc_type":"assembly_order","doc_no":"AO-2026-0001","status":"released","url":"/production"}
+{"ts":"2026-11-03T11:39:33.276Z","role":"IS","step_id":"P7-04","doc_type":"dispatch","doc_no":"DSP-2026-0001","status":"delivered","url":"/orders"}
+{"ts":"2026-11-03T11:39:42.630Z","role":"FS","step_id":"P7-06","doc_type":"invoice","doc_no":"INV-2026-0001","status":"issued","url":"/finance"}

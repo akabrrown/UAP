@@ -1,0 +1,6 @@
+sku,name,kind,category,brand,family,uom,tracking,hs_code,weight_kg,warranty_months,list_price,barcode,reorder_min,reorder_qty,specs
+OK-ROW-1,Valid row,component,Processors,Intel,,each,serial,8542.31,0.050,12,,6290000000028,2,10,cores=10;socket=LGA1700
+BAD-KIND-1,Item with invalid kind,widget,Misc,,,each,none,,0.1,12,,,0,0,
+OK-ROW-1,Processor Core i5-13400,component,Processors,Intel,,each,serial,8542.31,0.050,12,,6290000000028,2,10,cores=10;socket=LGA1700
+NO-NAME-1,,component,Misc,,,each,none,,0.1,12,,,0,0,
+NEG-WEIGHT-1,Item with negative weight,component,Misc,,,each,none,,-2,12,,,0,0,

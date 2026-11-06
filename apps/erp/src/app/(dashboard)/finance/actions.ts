@@ -54,6 +54,37 @@ export async function recordPaymentAction(formData: FormData) {
       ]
     );
 
+    // Auto-generate balanced double-entry journal entry (A-09, A-10)
+    try {
+      const periodRes = await db.query(
+        `select id from fin.fiscal_periods where status = 'open' and starts_on <= $1::date and ends_on >= $1::date limit 1`,
+        [paidOn]
+      );
+      const periodId = periodRes.rows[0]?.id;
+      if (periodId && amountMinor > 0) {
+        const jeRes = await db.query(
+          `insert into fin.journal_entries (
+             entry_no, entry_date, period_id, source_type, source_id, memo, status
+           ) values (
+             core.next_doc_no('JE'), $1, $2, 'payment', $3, $4, 'posted'
+           ) returning id`,
+          [paidOn, periodId, payment.id, `Payment cleared: ${payment.payment_no}`]
+        );
+        const jeId = jeRes.rows[0].id;
+        const accBank = 'abd9fa47-f0be-4898-b211-9e5edc65f137'; // 1010 Bank
+        const accAr = 'e10215c8-1a61-4365-abcb-f16d88180a90';   // 1100 AR
+        await db.query(
+          `insert into fin.journal_lines (entry_id, line_no, account_id, debit_minor, credit_minor, memo)
+           values 
+             ($1, 1, $2, $3, 0, 'Bank Clearing Debit'),
+             ($1, 2, $4, 0, $3, 'Accounts Receivable Credit')`,
+          [jeId, accBank, amountMinor, accAr]
+        );
+      }
+    } catch (jErr) {
+      console.warn("Could not post journal for payment:", jErr);
+    }
+
     revalidatePath("/finance");
     return { success: true, paymentId: payment.id };
   } catch (err: any) {

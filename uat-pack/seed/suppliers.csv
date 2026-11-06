@@ -1,0 +1,4 @@
+name,kind,country,currency,payment_terms,lead_time_days,contact_name,email,phone,tin
+Shenzhen Component Co,distributor,CN,USD,"30% advance, 70% before shipment",35,Li Wei,orders@shenzhen-component.test,+86 000 0000 0001,
+Accra Parts Mart,local_dealer,GH,GHS,Cash on delivery,3,Esi Quaye,sales@accra-parts.test,024 000 0002,C0000000001
+Hong Kong ChipLink,distributor,HK,USD,Net 30,14,Chan Ho,sales@chiplink.test,+852 0000 0003,

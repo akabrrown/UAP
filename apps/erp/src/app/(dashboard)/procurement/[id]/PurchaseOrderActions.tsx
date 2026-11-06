@@ -34,7 +34,7 @@ export function PurchaseOrderActions({
   const [editShippingMode, setEditShippingMode] = useState(shippingMode || "sea");
   const [editIncoterm, setEditIncoterm] = useState(incoterm || "FOB");
   const [editExpectedDate, setEditExpectedDate] = useState(
-    expectedArrivalDate ? expectedArrivalDate.slice(0, 10) : ""
+    expectedArrivalDate ? String(expectedArrivalDate).slice(0, 10) : ""
   );
   const [editNotes, setEditNotes] = useState(notes || "");
 

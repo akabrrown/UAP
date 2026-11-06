@@ -20,6 +20,7 @@ export default function LoginPage() {
               fill 
               className="object-cover" 
               sizes="64px"
+              unoptimized
             />
           </div>
           <h1 className="text-xl font-semibold text-white">Techcore</h1>

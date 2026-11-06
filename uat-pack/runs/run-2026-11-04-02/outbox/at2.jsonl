@@ -1,0 +1,1 @@
+{"step_id":"P0-03-AT2","role":"AT2","status":"pass","started_at":"2026-11-04T08:25:15.837Z","ended_at":"2026-11-04T08:25:20.376Z","page":"/production/queue","observed":"Page loaded successfully. URL: http://localhost:3001/production/queue. ","evidence":["evidence/P0-03-AT2/before.png","evidence/P0-03-AT2/after.png"],"doc_refs":{},"findings":[],"assisted":false}

@@ -31,8 +31,9 @@ export function OrderActions({
   // Form states
   const [editDeliveryPoint, setEditDeliveryPoint] = useState(deliveryPoint || "");
   const [editRequiredBy, setEditRequiredBy] = useState(
-    requiredBy ? requiredBy.slice(0, 10) : ""
+    requiredBy ? (typeof requiredBy === "string" ? requiredBy.slice(0, 10) : new Date(requiredBy).toISOString().slice(0, 10)) : ""
   );
+
   const [editNotes, setEditNotes] = useState(notes || "");
 
   const canEdit = status !== "completed" && status !== "cancelled";

@@ -53,7 +53,7 @@ export default async function LandedCostDetailPage({
       from proc.shipment_lines sl
       join catalog.items i on i.id = sl.item_id
       left join proc.landed_cost_allocations lca 
-        on lca.run_id = $1 and lca.basis_value = (sl.unit_value_minor * sl.qty_shipped)::text
+        on lca.run_id = $1 and lca.basis_value = (sl.unit_value_minor * sl.qty_shipped)::numeric
       where sl.shipment_id = $2
       group by sl.id, sl.item_id, sl.qty_shipped, sl.unit_value_minor, sl.currency, i.sku, i.name
       order by i.sku

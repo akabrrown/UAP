@@ -55,7 +55,7 @@ export default async function FinishedUnitInspectionPage({
         tr.id,
         tr.test_type,
         tr.result,
-        tr.notes,
+        coalesce(tr.tool, '') as notes,
         tr.created_at::text as created_at
       from prod.test_runs tr
       where tr.unit_id = $1
@@ -63,7 +63,7 @@ export default async function FinishedUnitInspectionPage({
     `, [id]),
 
     db.query(`
-      select id, code, description, category 
+      select id, code, name as description, category 
       from prod.defect_codes 
       where active = true 
       order by code

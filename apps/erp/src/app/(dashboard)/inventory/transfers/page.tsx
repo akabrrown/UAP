@@ -3,29 +3,21 @@ import { Plus, Search, Filter, ArrowRightLeft } from "lucide-react";
 import Link from "next/link";
 import { requireAnyScope } from "@/lib/session";
 
-import { unstable_cache } from "next/cache";
-
-const getTransfers = unstable_cache(
-  async () => {
-    const result = await db.query(`
-      select t.id, t.transfer_no, t.status, t.shipped_at, t.received_at,
-             from_loc.name as from_location_name,
-             to_loc.name as to_location_name
-      from inv.transfers t
-      join core.locations from_loc on from_loc.id = t.from_location_id
-      join core.locations to_loc on to_loc.id = t.to_location_id
-      order by t.transfer_no desc
-    `);
-    return result.rows;
-  },
-  ["stock-transfers-list"],
-  { tags: ["inventory"] }
-);
+export const dynamic = "force-dynamic";
 
 export default async function TransfersPage() {
   await requireAnyScope(["inventory.read", "inventory.issue"]);
 
-  const transfers = await getTransfers();
+  const result = await db.query(`
+    select t.id, t.transfer_no, t.status, t.shipped_at, t.received_at,
+           from_loc.name as from_location_name,
+           to_loc.name as to_location_name
+    from inv.transfers t
+    join core.locations from_loc on from_loc.id = t.from_location_id
+    join core.locations to_loc on to_loc.id = t.to_location_id
+    order by t.transfer_no desc
+  `);
+  const transfers = result.rows;
 
   return (
     <div className="space-y-6">

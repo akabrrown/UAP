@@ -17,7 +17,7 @@ export default async function PurchaseOrderDetailPage({
     `select po.*, 
             s.name as supplier_name, 
             s.supplier_no, 
-            s.country_code
+            s.country as country_code
      from proc.purchase_orders po
      join proc.suppliers s on s.id = po.supplier_id
      where po.id = $1`,
@@ -57,7 +57,7 @@ export default async function PurchaseOrderDetailPage({
             status={po.status}
             shippingMode={po.shipping_mode}
             incoterm={po.incoterm}
-            expectedArrivalDate={po.expected_arrival_date}
+            expectedArrivalDate={po.expected_arrival_date ? new Date(po.expected_arrival_date).toISOString().slice(0, 10) : null}
             notes={po.notes}
           />
           <span

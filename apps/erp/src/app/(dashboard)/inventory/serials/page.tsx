@@ -74,7 +74,7 @@ export default async function SerialsLookupPage({
           tr.test_type,
           tr.result,
           tr.created_at::text as created_at,
-          tr.notes,
+          coalesce(tr.tool, '') as notes,
           p.full_name as tester_name
         from prod.test_runs tr
         left join core.profiles p on p.id = tr.run_by

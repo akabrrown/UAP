@@ -111,6 +111,34 @@ export async function createInvoiceAction(prevState: any, formData: FormData) {
       );
     }
 
+    // Auto-generate balanced double-entry journal entry (A-09, A-10)
+    if (kind !== "proforma" && totalMinor > BigInt(0)) {
+      const periodRes = await client.query(
+        `select id from fin.fiscal_periods where status = 'open' and starts_on <= current_date and ends_on >= current_date limit 1`
+      );
+      const periodId = periodRes.rows[0]?.id;
+      if (periodId) {
+        const jeRes = await client.query(
+          `insert into fin.journal_entries (
+             entry_no, entry_date, period_id, source_type, source_id, memo, status
+           ) values (
+             core.next_doc_no('JE'), current_date, $1, 'invoice', $2, 'Customer Tax Invoice Posting', 'posted'
+           ) returning id`,
+          [periodId, invoiceId]
+        );
+        const jeId = jeRes.rows[0].id;
+        const accAr = 'e10215c8-1a61-4365-abcb-f16d88180a90'; // 1100 Accounts Receivable
+        const accRev = '12e96eb4-f97b-4b15-9aea-0d64aaca2e11'; // 4000 Sales Revenue
+        await client.query(
+          `insert into fin.journal_lines (entry_id, line_no, account_id, debit_minor, credit_minor, memo)
+           values 
+             ($1, 1, $2, $3, 0, 'Accounts Receivable Debit'),
+             ($1, 2, $4, 0, $3, 'Internal Sales Revenue Credit')`,
+          [jeId, accAr, totalMinor.toString(), accRev]
+        );
+      }
+    }
+
     await client.query("COMMIT");
   } catch (error: any) {
     await client.query("ROLLBACK");

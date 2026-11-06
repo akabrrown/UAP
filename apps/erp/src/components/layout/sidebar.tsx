@@ -24,6 +24,7 @@ export function Sidebar({ session }: { session: Session }) {
             fill 
             className="object-cover" 
             sizes="32px"
+            unoptimized
           />
         </div>
         <span className="truncate">Techcore</span>

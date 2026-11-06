@@ -53,9 +53,10 @@ export default async function OrderDetailPage({
             orderNo={order.order_no}
             status={order.status}
             deliveryPoint={order.delivery_point}
-            requiredBy={order.required_by}
+            requiredBy={order.required_by ? new Date(order.required_by).toISOString() : null}
             notes={order.notes}
           />
+
           <span
             className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${
               order.status === "completed" || order.status === "dispatched"

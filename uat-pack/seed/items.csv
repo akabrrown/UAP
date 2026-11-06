@@ -1,0 +1,14 @@
+sku,name,kind,category,brand,family,uom,tracking,hs_code,weight_kg,warranty_months,list_price,barcode,reorder_min,reorder_qty,specs
+LAP-PB14-I5-16-512,UPSA ProBook 14 (i5 / 16GB / 512GB),finished_good,Laptops,UPSA,ProBook 14,each,serial,8471.30,1.600,12,6500.00,6290000000011,0,0,cpu=i5-13400;ram=16GB;ssd=512GB;display=14in FHD
+CPU-I5-13400,Processor Core i5-13400,component,Processors,Intel,,each,serial,8542.31,0.050,12,,6290000000028,2,10,cores=10;socket=LGA1700
+MB-H610-14,Motherboard H610 (14in chassis),component,Motherboards,Generic,,each,serial,8473.30,0.250,12,,6290000000035,2,10,socket=LGA1700;ram=DDR4
+RAM-DDR4-8G,Memory module DDR4 8GB,component,Memory,Generic,,each,serial,8473.30,0.020,12,,6290000000042,4,20,type=DDR4;size=8GB
+SSD-512-NVME,SSD NVMe 512GB,component,Storage,Generic,,each,serial,8523.51,0.010,12,,6290000000059,2,10,size=512GB;interface=NVMe
+DISP-14-FHD,Display panel 14in FHD,component,Displays,Generic,,each,lot,8524.11,0.180,12,,6290000000066,2,10,size=14in;res=1920x1080
+KBD-14-US,Keyboard 14in US layout,component,Input,Generic,,each,lot,8471.60,0.120,12,,6290000000073,2,10,layout=US
+BAT-45WH,Battery 45Wh,component,Batteries,Generic,,each,lot,8507.60,0.250,12,,6290000000080,2,10,capacity=45Wh
+CASE-14-ALU,Chassis 14in aluminium,component,Chassis,Generic,,each,lot,8473.30,0.450,12,,6290000000097,2,10,material=aluminium
+FAN-14-CPU,CPU cooling fan,component,Cooling,Generic,,each,lot,8414.59,0.030,12,,6290000000103,2,10,
+WIFI-AX200,Wi-Fi 6 module,component,Networking,Intel,,each,lot,8517.62,0.005,12,,6290000000110,2,10,standard=Wi-Fi 6
+CHG-65W,Charger 65W,accessory,Power,Generic,,each,lot,8504.40,0.250,12,,6290000000127,2,10,power=65W
+PACK-BOX-14,Packaging box 14in,packaging,Packaging,Local,,each,none,4819.10,0.200,0,,6290000000134,4,20,

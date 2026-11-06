@@ -1,0 +1,2015 @@
+[
+ {
+  "phase": 0,
+  "title": "Foundation: accounts, access and rules",
+  "opens_when": "Environment reset to seed state; only the Super Admin account exists with a known password and TOTP secret.",
+  "checkpoint": [
+   "A-24",
+   "A-25",
+   "A-26"
+  ],
+  "steps": [
+   {
+    "id": "P0-01",
+    "roles": [
+     "SA"
+    ],
+    "smoke": true,
+    "does": "Sign in with the seeded account and TOTP code. Look at the home screen and the sidebar.",
+    "expect": "Lands on /home with Super Admin widgets (pending invitations, failed jobs, backup status). Sidebar shows Admin and Reports only; no Procurement, Inventory, Production, Sales, Finance or Service modules.",
+    "frs": [
+     "FR-ID-01"
+    ],
+    "assertions": [
+     "A-24"
+    ]
+   },
+   {
+    "id": "P0-02",
+    "roles": [
+     "SA"
+    ],
+    "smoke": false,
+    "does": "Open /admin/users and invite the seven staff accounts (MG, PI, IS, FS, AT1, AT2, QI), each with the matching role template.",
+    "expect": "Seven rows with status invited; seven invitation emails arrive in the mail sink within 60 seconds; each contains a link and no password.",
+    "frs": [
+     "FR-ID-02",
+     "FR-NT-01"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P0-03",
+    "roles": [
+     "MG",
+     "PI",
+     "IS",
+     "FS",
+     "AT1",
+     "AT2",
+     "QI"
+    ],
+    "smoke": true,
+    "does": "Each agent opens its own invitation email, follows the link, sets a password, enrols the authenticator, saves recovery codes and lands on home (agents work in parallel, each in its own browser session).",
+    "expect": "Each lands on its own role home (technicians on /production/queue). Sidebar matches the role map in the workflow document section 2. Profile status becomes active.",
+    "frs": [
+     "FR-ID-01"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P0-04",
+    "roles": [
+     "SA"
+    ],
+    "smoke": false,
+    "does": "Open /admin/approval-rules and set the test limits: requisition 20,000; PO 50,000; stock write-off 1,000; discount over 5%; expense 500; supplier payment 30,000; supplier bank change always; period close always. Use Test rule with 49,999 and 50,000 for PO.",
+    "expect": "Test rule names Management as approver only for 50,000 and above. Rules saved and audited.",
+    "frs": [
+     "FR-ID-05",
+     "FR-ID-07"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P0-05",
+    "roles": [
+     "SA"
+    ],
+    "smoke": false,
+    "does": "In /admin/settings add exchange rate USD to GHS (test value 12.00, source “UAT”), tax rates (test values) and three cost centres; confirm locations, defect codes and chart of accounts exist.",
+    "expect": "Entries saved; a duplicate rate for the same source and date is refused; the six seeded locations are present.",
+    "frs": [
+     "FR-ID-07",
+     "FR-FN-06"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P0-06",
+    "roles": [
+     "SA"
+    ],
+    "smoke": false,
+    "does": "Open AT2 in /admin/users, press Edit scopes, add qc.inspect as an extra scope, review the before/after diff and save.",
+    "expect": "Diff lists only qc.inspect as added; Management receives an email about the change; AT2’s new scope appears after Revoke sessions and a fresh sign-in.",
+    "frs": [
+     "FR-ID-02",
+     "FR-ID-04"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P0-07",
+    "roles": [
+     "SA"
+    ],
+    "smoke": false,
+    "does": "Type the addresses /procurement/orders/new, /finance/invoices and /sales/orders.",
+    "expect": "Each shows the 403 page naming the missing capability; none shows data. Request access emails the Super Admin.",
+    "frs": [
+     "FR-ID-02"
+    ],
+    "assertions": [
+     "A-25"
+    ]
+   }
+  ]
+ },
+ {
+  "phase": 1,
+  "title": "Master data and opening stock",
+  "opens_when": "All seven accounts active; approval rules and rates configured (P0).",
+  "checkpoint": [
+   "A-02",
+   "A-06",
+   "A-26",
+   "A-28"
+  ],
+  "steps": [
+   {
+    "id": "P1-01",
+    "roles": [
+     "IS"
+    ],
+    "smoke": false,
+    "does": "Open /admin/imports, download the Items template, upload items_with_errors.csv and press Validate.",
+    "expect": "Row-level errors with reasons (invalid kind, duplicate SKU, missing name, negative weight). Nothing is written; Commit is disabled.",
+    "frs": [
+     "FR-IN-12"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P1-02",
+    "roles": [
+     "IS"
+    ],
+    "smoke": true,
+    "does": "Upload items.csv, Validate, Commit.",
+    "expect": "13 items created (12 components plus the finished laptop) with tracking modes as in the file; batch status committed.",
+    "frs": [
+     "FR-IN-12",
+     "FR-CT-01"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P1-03",
+    "roles": [
+     "PI"
+    ],
+    "smoke": false,
+    "does": "Import suppliers.csv (three suppliers) through the wizard.",
+    "expect": "Three suppliers in status pending_verification.",
+    "frs": [
+     "FR-IN-12",
+     "FR-PR-01"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P1-04",
+    "roles": [
+     "IS"
+    ],
+    "smoke": false,
+    "does": "Import accounts.csv (departments and one staff account).",
+    "expect": "Four accounts active with credit limits.",
+    "frs": [
+     "FR-IN-12",
+     "FR-CT-07"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P1-05",
+    "roles": [
+     "PI"
+    ],
+    "smoke": false,
+    "does": "Open the first two suppliers, complete the checklist, press Mark active, and add warranty terms (12 months from receipt).",
+    "expect": "Suppliers 1 and 2 active; supplier 3 left pending on purpose for P2-09. Warranty terms saved.",
+    "frs": [
+     "FR-PR-01",
+     "FR-PR-07"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P1-06",
+    "roles": [
+     "IS"
+    ],
+    "smoke": false,
+    "does": "Open the finished laptop and create BOM version 1 in the editor: add the 12 components (RAM quantity 2). Press Save draft, then Submit for approval.",
+    "expect": "BOM status pending_approval; Management notified; IS cannot approve its own submission.",
+    "frs": [
+     "FR-CT-03"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P1-07",
+    "roles": [
+     "MG"
+    ],
+    "smoke": true,
+    "does": "Open the Approvals inbox from the bell, open the BOM request, check lines and cost, press Approve.",
+    "expect": "BOM becomes active; IS notified. Exactly one active version exists.",
+    "frs": [
+     "FR-CT-03",
+     "FR-ID-06"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P1-08",
+    "roles": [
+     "IS"
+    ],
+    "smoke": false,
+    "does": "In /inventory/reorder set policies for all components (minimum equals two laptop sets). Import opening_stock.csv (four laptop sets with serial numbers) through the wizard.",
+    "expect": "Opening ledger rows at WH-MAIN; serial-tracked items have component serials; stock on hand equals the file totals.",
+    "frs": [
+     "FR-IN-12",
+     "FR-IN-09",
+     "FR-IN-04"
+    ],
+    "assertions": [
+     "A-02",
+     "A-28"
+    ]
+   },
+   {
+    "id": "P1-09",
+    "roles": [
+     "IS",
+     "QI"
+    ],
+    "smoke": false,
+    "does": "IS plans a full count for WH-MAIN and starts it. IS and QI count by scanning; QI deliberately counts one RAM module fewer. IS submits for review, accepts variances and posts.",
+    "expect": "One variance of −1 RAM shown with value; adjustment (below the 1,000 limit) posted; ledger shows the adjustment row; count status posted.",
+    "frs": [
+     "FR-IN-08",
+     "FR-IN-09"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P1-10",
+    "roles": [
+     "MG"
+    ],
+    "smoke": false,
+    "does": "Open the stock valuation report and compare with the opening values.",
+    "expect": "Valuation equals opening stock cost less the adjustment.",
+    "frs": [
+     "FR-RP-02"
+    ],
+    "assertions": []
+   }
+  ]
+ },
+ {
+  "phase": 2,
+  "title": "Replenishment and purchasing",
+  "opens_when": "Opening stock posted; suppliers 1 and 2 active; reorder policies set.",
+  "checkpoint": [
+   "A-11",
+   "A-12",
+   "A-16",
+   "A-32"
+  ],
+  "steps": [
+   {
+    "id": "P2-01",
+    "roles": [
+     "IS"
+    ],
+    "smoke": true,
+    "does": "From the home widget open Reorder suggestions, select the below-minimum rows and press Create requisition from selected.",
+    "expect": "Requisition draft with source reorder and lines prefilled.",
+    "frs": [
+     "FR-IN-10",
+     "FR-PR-02"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P2-02",
+    "roles": [
+     "IS"
+    ],
+    "smoke": false,
+    "does": "Open the requisition and press Submit (value above 20,000).",
+    "expect": "Status submitted; Management notified in-app.",
+    "frs": [
+     "FR-PR-02",
+     "FR-ID-05"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P2-03",
+    "roles": [
+     "MG"
+    ],
+    "smoke": true,
+    "does": "Approvals inbox › open › Approve.",
+    "expect": "Requisition approved; Procurement notified; Convert to PO becomes available to PI.",
+    "frs": [
+     "FR-ID-06"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P2-04",
+    "roles": [
+     "PI"
+    ],
+    "smoke": true,
+    "does": "Open the requisition and press Convert to PO. Choose supplier 1 (USD). First change currency to EUR to test the missing-rate prompt, then return to USD. Save draft and Submit for approval.",
+    "expect": "EUR shows “No rate for EUR on [date]”; USD fills the rate automatically; PO status pending_approval (above 50,000); Management notified.",
+    "frs": [
+     "FR-PR-03",
+     "FR-FN-06"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P2-05",
+    "roles": [
+     "MG"
+    ],
+    "smoke": false,
+    "does": "Approve the PO from the inbox.",
+    "expect": "PO approved; PI notified.",
+    "frs": [
+     "FR-PR-03"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P2-06",
+    "roles": [
+     "PI"
+    ],
+    "smoke": true,
+    "does": "Press Send to supplier, then Record confirmation with supplier reference and dates.",
+    "expect": "PDF generated and emailed to the supplier in the mail sink; status sent then confirmed; PDF shows PO number, supplier, lines, totals, incoterm.",
+    "frs": [
+     "FR-PR-03",
+     "FR-NT-01"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P2-07",
+    "roles": [
+     "PI",
+     "MG"
+    ],
+    "smoke": false,
+    "does": "PI presses Amend on the PO (increase one line) and submits; MG approves; PI resends.",
+    "expect": "New version created; approval requested again; resend emails the new PDF; version history visible.",
+    "frs": [
+     "FR-PR-03",
+     "FR-ID-05"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P2-08",
+    "roles": [
+     "PI"
+    ],
+    "smoke": false,
+    "does": "Create a small PO to supplier 2 (local, GHS, below limit) for packaging boxes; Submit; Send; Confirm.",
+    "expect": "Submit approves immediately (no Management step); sent and confirmed.",
+    "frs": [
+     "FR-PR-03",
+     "FR-ID-05"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P2-09",
+    "roles": [
+     "PI"
+    ],
+    "smoke": false,
+    "does": "Try to create a PO for supplier 3 (still pending verification).",
+    "expect": "Blocked with a message that the supplier must be active; no PO created.",
+    "frs": [
+     "FR-PR-01"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P2-10",
+    "roles": [
+     "PI",
+     "FS",
+     "MG"
+    ],
+    "smoke": false,
+    "does": "PI requests a bank detail change on supplier 1; FS presses Verify (call-back ticked); MG approves in the inbox.",
+    "expect": "Request moves requested, verified, approved; new details applied; PI and FS notified. While not yet approved, payments to this supplier are blocked (checked again in P5-05).",
+    "frs": [
+     "FR-PR-01"
+    ],
+    "assertions": [
+     "A-22"
+    ]
+   }
+  ]
+ },
+ {
+  "phase": 3,
+  "title": "Imports: shipment, customs and charges",
+  "opens_when": "PO to supplier 1 confirmed.",
+  "checkpoint": [
+   "A-18",
+   "A-19",
+   "A-32"
+  ],
+  "steps": [
+   {
+    "id": "P3-01",
+    "roles": [
+     "PI"
+    ],
+    "smoke": true,
+    "does": "On the PO press Create shipment. Enter mode sea, BL number, two containers, carrier, forwarder, agent, ports, ETD, ETA, free days 14. Press Create shipment.",
+    "expect": "Shipment booked with number; lines carry PO quantities; ETA stored as original ETA.",
+    "frs": [
+     "FR-IM-01",
+     "FR-IM-02"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P3-02",
+    "roles": [
+     "PI"
+    ],
+    "smoke": false,
+    "does": "Press Mark departed, add a transhipment event, then Update ETA to five days later.",
+    "expect": "Status in_transit; events on timeline; ETA slip of 5 days notifies Management and Inventory (threshold 3).",
+    "frs": [
+     "FR-IM-03"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P3-03",
+    "roles": [
+     "MG",
+     "IS"
+    ],
+    "smoke": false,
+    "does": "Each agent checks the bell, opens the notification, and opens /imports/shipments?filter=delayed.",
+    "expect": "Notification present once per recipient; list shows slippage in days; board column correct.",
+    "frs": [
+     "FR-IM-03",
+     "FR-RP-01"
+    ],
+    "assertions": [
+     "A-18"
+    ]
+   },
+   {
+    "id": "P3-04",
+    "roles": [
+     "PI"
+    ],
+    "smoke": false,
+    "does": "Add charges as estimates: freight USD, insurance USD, clearing fee GHS (basis quantity), local transport GHS (basis weight). Leave shipment weights empty.",
+    "expect": "Charges saved with currency, rate, basis, estimated status; GHS equivalents computed at the stored rate.",
+    "frs": [
+     "FR-IM-05"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P3-05",
+    "roles": [
+     "PI"
+    ],
+    "smoke": false,
+    "does": "Upload bill of lading, invoice and packing list; also try a renamed executable and the EICAR test file.",
+    "expect": "Valid files show Scanning then Clean and tick the checklist; executable and EICAR are blocked with a clear message.",
+    "frs": [
+     "FR-IM-07"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P3-06",
+    "roles": [
+     "PI"
+    ],
+    "smoke": false,
+    "does": "Add the event Arrived. (Orchestrator then advances the clock 9 days.)",
+    "expect": "Status arrived; free-days clock starts; after the clock shift a demurrage alert (3 days or fewer left) reaches PI and Management.",
+    "frs": [
+     "FR-IM-03",
+     "FR-IM-09"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P3-07",
+    "roles": [
+     "PI"
+    ],
+    "smoke": true,
+    "does": "Start customs entry; press Mark lodged, Mark queried with a reason, Release hold, Mark assessed (duty, VAT, levies), Mark paid, Mark released, then Mark cleared on the shipment.",
+    "expect": "Queried sets shipment held and notifies MG and IS; assessed creates duty and levy charges as actual; released then cleared moves status to cleared.",
+    "frs": [
+     "FR-IM-04"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P3-08",
+    "roles": [
+     "PI"
+    ],
+    "smoke": false,
+    "does": "Replace freight and clearing estimates with invoiced amounts using Mark actual.",
+    "expect": "Estimates become actual; a change after a posted landed-cost run would require a new run.",
+    "frs": [
+     "FR-IM-05"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P3-09",
+    "roles": [
+     "PI"
+    ],
+    "smoke": true,
+    "does": "Press Mark delivered.",
+    "expect": "Status delivered; a goods receipt draft with expected lines is created; Inventory notified.",
+    "frs": [
+     "FR-IM-01",
+     "FR-NT-01"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P3-10",
+    "roles": [
+     "PI"
+    ],
+    "smoke": false,
+    "does": "Create a second, small air shipment (supplier 1) for fans and Wi-Fi cards, record weights, add charges with basis weight, run it to delivered.",
+    "expect": "Air shipment follows the same flow; weight-based charge allocates once weights exist.",
+    "frs": [
+     "FR-IM-01",
+     "FR-IM-05"
+    ],
+    "assertions": []
+   }
+  ]
+ },
+ {
+  "phase": 4,
+  "title": "Receiving and incoming inspection",
+  "opens_when": "Goods receipt drafts exist from P3-09 and P3-10; local PO from P2-08 confirmed.",
+  "checkpoint": [
+   "A-03",
+   "A-27",
+   "A-28",
+   "A-30"
+  ],
+  "steps": [
+   {
+    "id": "P4-01",
+    "roles": [
+     "IS"
+    ],
+    "smoke": false,
+    "does": "From the home widget open the expected receipt. Scan items and enter quantities; short-ship one line by one unit.",
+    "expect": "Scan adds or increments lines; unknown barcode shows Not found; item not on PO shows Not on this PO with confirm.",
+    "frs": [
+     "FR-IN-02"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P4-02",
+    "roles": [
+     "IS"
+    ],
+    "smoke": true,
+    "does": "Capture serials for CPU, motherboard, RAM and SSD lines. Try a duplicate serial, then a wrong count.",
+    "expect": "Duplicate refused with link to the existing record; Post receipt stays disabled until counts match.",
+    "frs": [
+     "FR-IN-04",
+     "FR-IN-02"
+    ],
+    "assertions": [
+     "A-28"
+    ]
+   },
+   {
+    "id": "P4-03",
+    "roles": [
+     "IS"
+    ],
+    "smoke": false,
+    "does": "Mark one SSD as rejected (dead on arrival) with reason and photo. Press Request inspection for lines whose items require it.",
+    "expect": "Reject quantity recorded; receipt status inspecting; Quality Inspector notified.",
+    "frs": [
+     "FR-IN-02",
+     "FR-IN-03"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P4-04",
+    "roles": [
+     "QI"
+    ],
+    "smoke": false,
+    "does": "Open Incoming inspections, inspect the CPU line (Accept) and the SSD line (Reject with defect code).",
+    "expect": "Accept releases the line; Reject keeps the quantity as rejected; Inventory notified.",
+    "frs": [
+     "FR-IN-03",
+     "FR-QC-05"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P4-05",
+    "roles": [
+     "IS"
+    ],
+    "smoke": true,
+    "does": "Press Post receipt and read the confirmation.",
+    "expect": "Confirmation lists rows to be written. After posting: accepted goods in warehouse, rejected SSD in quarantine, lots and serials created, PO and shipment quantities updated, variance banner shown, Procurement and Finance notified.",
+    "frs": [
+     "FR-IN-01",
+     "FR-IN-02"
+    ],
+    "assertions": [
+     "A-03",
+     "A-27"
+    ]
+   },
+   {
+    "id": "P4-06",
+    "roles": [
+     "IS"
+    ],
+    "smoke": false,
+    "does": "In a second browser tab press Post receipt again on the same receipt (and double-click once).",
+    "expect": "Second attempt shows “Already posted”; ledger rows are not duplicated.",
+    "frs": [
+     "FR-IN-02"
+    ],
+    "assertions": [
+     "A-27"
+    ]
+   },
+   {
+    "id": "P4-07",
+    "roles": [
+     "PI"
+    ],
+    "smoke": false,
+    "does": "On the posted receipt press Open supplier RMA for the rejected SSD; submit to supplier, record authorisation, mark shipped, record credit note.",
+    "expect": "RMA moves through states; stock leaves quarantine on Mark shipped; credit recorded.",
+    "frs": [
+     "FR-PR-05"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P4-08",
+    "roles": [
+     "IS"
+    ],
+    "smoke": false,
+    "does": "Receive the local PO from supplier 2 (no shipment) and post it.",
+    "expect": "Receipt posts without a shipment; lots recorded; PO received.",
+    "frs": [
+     "FR-IN-02"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P4-09",
+    "roles": [
+     "PI"
+    ],
+    "smoke": false,
+    "does": "Check PO status for the short-shipped line; use Close short with a reason.",
+    "expect": "PO status partly_received then closed short; remaining quantity cancelled; audit entry present.",
+    "frs": [
+     "FR-PR-03"
+    ],
+    "assertions": [
+     "A-30"
+    ]
+   }
+  ]
+ },
+ {
+  "phase": 5,
+  "title": "Landed cost, supplier invoices and payments",
+  "opens_when": "Receipts for the shipment posted (P4-05); charges are actual.",
+  "checkpoint": [
+   "A-04",
+   "A-09",
+   "A-10",
+   "A-21",
+   "A-22",
+   "A-31"
+  ],
+  "steps": [
+   {
+    "id": "P5-01",
+    "roles": [
+     "PI"
+    ],
+    "smoke": false,
+    "does": "On the shipment press Run landed cost. In the draft change the local transport basis to weight (no weights recorded) and press Recalculate; then change it to value.",
+    "expect": "Weight basis without weights shows an error naming the charge; value basis allocates; table shows share, added cost, new unit cost and effect on average cost.",
+    "frs": [
+     "FR-IM-06"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P5-02",
+    "roles": [
+     "PI"
+    ],
+    "smoke": true,
+    "does": "Press Post landed cost and read the confirmation.",
+    "expect": "Lot and unit costs update; cost history appended; run status posted; FS and MG notified; allocations equal each charge exactly.",
+    "frs": [
+     "FR-IM-06"
+    ],
+    "assertions": [
+     "A-04",
+     "A-31"
+    ]
+   },
+   {
+    "id": "P5-03",
+    "roles": [
+     "FS"
+    ],
+    "smoke": false,
+    "does": "Open the item stock detail for the SSD and its cost history tab; later open the journal.",
+    "expect": "Cost history shows the landed-cost event; within 60 seconds journal entries for the receipt and the landed cost exist and balance.",
+    "frs": [
+     "FR-IN-05",
+     "FR-FN-05"
+    ],
+    "assertions": [
+     "A-09",
+     "A-10"
+    ]
+   },
+   {
+    "id": "P5-04",
+    "roles": [
+     "FS"
+    ],
+    "smoke": false,
+    "does": "Create a supplier invoice (supplier 1) from the shipment, Run match with a deliberate price difference on one line, then Approve for payment.",
+    "expect": "Variance flagged; approval for payment goes to Management; after MG approves, status approved.",
+    "frs": [
+     "FR-PR-04",
+     "FR-ID-05"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P5-05",
+    "roles": [
+     "FS",
+     "MG"
+    ],
+    "smoke": false,
+    "does": "FS tries Record payment before the bank change from P2-10 is approved (if still pending), then after approval records the payment above the 30,000 limit; MG approves.",
+    "expect": "Before approval: blocked with the bank-change message. After: payment goes to Management, then clears; journals post; supplier invoice paid.",
+    "frs": [
+     "FR-FN-02"
+    ],
+    "assertions": [
+     "A-21",
+     "A-22"
+    ]
+   },
+   {
+    "id": "P5-06",
+    "roles": [
+     "FS"
+    ],
+    "smoke": false,
+    "does": "Record a cash payment to supplier 2 below the limit.",
+    "expect": "Payment clears immediately; journal entry exists.",
+    "frs": [
+     "FR-FN-02"
+    ],
+    "assertions": [
+     "A-10"
+    ]
+   },
+   {
+    "id": "P5-07",
+    "roles": [
+     "PI"
+    ],
+    "smoke": false,
+    "does": "Press Close shipment. Expect it to be refused first (a required document or an estimated charge remains); fix and close.",
+    "expect": "First attempt disabled or refused with the reason; after fixing, the shipment closes.",
+    "frs": [
+     "FR-IM-07"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P5-08",
+    "roles": [
+     "PI",
+     "FS"
+    ],
+    "smoke": false,
+    "does": "Reverse the landed-cost run (reason), check costs restore, run and post again.",
+    "expect": "Reversal restores prior costs; second run posts; cost history shows three events; journals balance.",
+    "frs": [
+     "FR-IM-06"
+    ],
+    "assertions": [
+     "A-04",
+     "A-09"
+    ]
+   },
+   {
+    "id": "P5-09",
+    "roles": [
+     "MG"
+    ],
+    "smoke": false,
+    "does": "Open the landed cost versus estimate report and the shipment status report.",
+    "expect": "Figures match recorded charges and allocations (Verifier checks).",
+    "frs": [
+     "FR-RP-02",
+     "FR-IM-08"
+    ],
+    "assertions": []
+   }
+  ]
+ },
+ {
+  "phase": 6,
+  "title": "Production and quality",
+  "opens_when": "Components costed in stock; BOM active; local replenishment received when needed.",
+  "checkpoint": [
+   "A-05",
+   "A-06",
+   "A-07",
+   "A-08",
+   "A-13",
+   "A-20",
+   "A-28",
+   "A-29"
+  ],
+  "steps": [
+   {
+    "id": "P6-01",
+    "roles": [
+     "IS"
+    ],
+    "smoke": true,
+    "does": "Create an assembly order for 10 laptops: Save draft, Plan, Check materials.",
+    "expect": "Status awaiting_materials with a shortage table (RAM short by 4).",
+    "frs": [
+     "FR-PD-01",
+     "FR-PD-02"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P6-02",
+    "roles": [
+     "IS",
+     "PI"
+    ],
+    "smoke": false,
+    "does": "IS presses Create requisition for shortage and Submit (below limit, auto-approved). PI converts to a local PO to supplier 2, sends and confirms. Orchestrator advances one day. IS receives and posts.",
+    "expect": "Requisition linked to the assembly order; local PO; receipt posts; stock rises by 4 RAM.",
+    "frs": [
+     "FR-PD-02",
+     "FR-PR-02",
+     "FR-IN-02"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P6-03",
+    "roles": [
+     "IS"
+    ],
+    "smoke": true,
+    "does": "Open the assembly order, press Check materials again, then Release.",
+    "expect": "Status ready then released; 10 unit records with build references; materials reserved; technicians notified.",
+    "frs": [
+     "FR-PD-04",
+     "FR-IN-06"
+    ],
+    "assertions": [
+     "A-13"
+    ]
+   },
+   {
+    "id": "P6-04",
+    "roles": [
+     "IS"
+    ],
+    "smoke": true,
+    "does": "Press Issue materials, scan the component serials for all ten sets, press Post issue.",
+    "expect": "Ledger issue rows move parts to assembly WIP; serial statuses issued; order in_progress.",
+    "frs": [
+     "FR-PD-04",
+     "FR-IN-01"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P6-05",
+    "roles": [
+     "AT1",
+     "AT2"
+    ],
+    "smoke": false,
+    "does": "Both technicians open their queue at the same moment and press Claim next unit.",
+    "expect": "Each receives a different unit; no unit is assigned twice.",
+    "frs": [
+     "FR-PD-08"
+    ],
+    "assertions": [
+     "A-13"
+    ]
+   },
+   {
+    "id": "P6-06",
+    "roles": [
+     "AT1"
+    ],
+    "smoke": false,
+    "does": "Work unit 1 step by step: Start step, checklist, Scan component installed (first scan a serial that was not issued), Complete step, Record imaging, Record test for POST and burn-in, Submit for QC.",
+    "expect": "Unissued serial refused; each step records time; genealogy rows created with serial, lot and cost; Submit for QC enabled only after tests pass; unit qc_hold; Quality notified.",
+    "frs": [
+     "FR-PD-05",
+     "FR-PD-06",
+     "FR-PD-09"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P6-07",
+    "roles": [
+     "AT2"
+    ],
+    "smoke": false,
+    "does": "Work unit 2 the same way in parallel with AT1.",
+    "expect": "No interference; both units progress; board updates live.",
+    "frs": [
+     "FR-PD-05",
+     "FR-PD-08"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P6-08",
+    "roles": [
+     "AT1"
+    ],
+    "smoke": false,
+    "does": "On unit 3 press Report problem (faulty display) and replace it by scanning a spare from stock.",
+    "expect": "Unit shows blocked then resumes; genealogy replaces the display (old row closed with reason); Inventory notified.",
+    "frs": [
+     "FR-PD-05",
+     "FR-PD-09"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P6-09",
+    "roles": [
+     "AT1"
+    ],
+    "smoke": false,
+    "does": "On unit 4 record a failed burn-in test and try Submit for QC; then repair, retest passed, submit.",
+    "expect": "Submit disabled with reason after the fail; enabled after a pass.",
+    "frs": [
+     "FR-PD-06"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P6-10",
+    "roles": [
+     "QI"
+    ],
+    "smoke": true,
+    "does": "Inspect unit 1: review spec versus actual, add no defects, press Pass and read the confirmation; print the label.",
+    "expect": "Final serial UPSA-LAP-year-number assigned; cost snapshot; finished-goods ledger row; unit in_stock; label PDF correct; Inventory notified.",
+    "frs": [
+     "FR-QC-01",
+     "FR-QC-04"
+    ],
+    "assertions": [
+     "A-05",
+     "A-07"
+    ]
+   },
+   {
+    "id": "P6-11",
+    "roles": [
+     "QI"
+    ],
+    "smoke": false,
+    "does": "Inspect unit 4: add a defect (cosmetic scratch) and press Fail.",
+    "expect": "Rework order created; unit rework; technician notified; defect analytics updated.",
+    "frs": [
+     "FR-QC-03",
+     "FR-QC-05"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P6-12",
+    "roles": [
+     "AT1",
+     "QI"
+    ],
+    "smoke": false,
+    "does": "AT1 opens Rework, Start rework, Mark fixed, retests, Submit for QC; QI passes it.",
+    "expect": "Unit returns to testing then qc_hold then in_stock; history shows both inspections.",
+    "frs": [
+     "FR-QC-03"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P6-13",
+    "roles": [
+     "AT2"
+    ],
+    "smoke": false,
+    "does": "AT2 opens the inspection page for unit 2 (which AT2 built) and tries Pass.",
+    "expect": "Blocked: “You worked on this unit and cannot inspect it”; no inspection row created.",
+    "frs": [
+     "FR-QC-02"
+    ],
+    "assertions": [
+     "A-08"
+    ]
+   },
+   {
+    "id": "P6-14",
+    "roles": [
+     "QI",
+     "MG"
+    ],
+    "smoke": false,
+    "does": "QI records a Conditional result on unit 5 (minor cosmetic). Management opens it and presses Override and accept.",
+    "expect": "Unit stays qc_hold after QI; Management notified; after override the unit proceeds with the defect noted; audit shows who overrode.",
+    "frs": [
+     "FR-QC-01",
+     "FR-QC-04"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P6-15",
+    "roles": [
+     "AT1",
+     "AT2",
+     "QI"
+    ],
+    "smoke": false,
+    "does": "Finish units 6 to 10: build, test, inspect. Leave unit 9 failing twice; IS and MG decide to scrap it.",
+    "expect": "Eight units pass; unit 9 scrapped with approval and e-waste record (if enabled); order completes automatically when all units are finalised or scrapped.",
+    "frs": [
+     "FR-PD-01",
+     "FR-SU-01"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P6-16",
+    "roles": [
+     "IS",
+     "MG"
+    ],
+    "smoke": false,
+    "does": "Read yields on the assembly order, the defects analytics and the buildable view.",
+    "expect": "Yield equals passed over built; defects by code and supplier correct; buildable reflects remaining stock.",
+    "frs": [
+     "FR-PD-03",
+     "FR-QC-05",
+     "FR-RP-01"
+    ],
+    "assertions": [
+     "A-20",
+     "A-29"
+    ]
+   }
+  ]
+ },
+ {
+  "phase": 7,
+  "title": "Internal sales, dispatch, invoicing and payment",
+  "opens_when": "At least 8 finished units in stock (P6); accounts active; list price set.",
+  "checkpoint": [
+   "A-10",
+   "A-13",
+   "A-14",
+   "A-15",
+   "A-21",
+   "A-23",
+   "A-29"
+  ],
+  "steps": [
+   {
+    "id": "P7-01",
+    "roles": [
+     "IS"
+    ],
+    "smoke": true,
+    "does": "Create an order for Dept of IT: 4 laptops with a 12% discount (above the 5% rule). Save draft and Submit.",
+    "expect": "Status pending_approval; Management notified; stock check shows 4 available.",
+    "frs": [
+     "FR-SL-01",
+     "FR-SL-02",
+     "FR-ID-05"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P7-02",
+    "roles": [
+     "MG",
+     "IS"
+    ],
+    "smoke": false,
+    "does": "MG presses Reject with a comment. IS reads the comment, lowers the discount to 4%, resubmits; MG sees it no longer needs approval (or approves).",
+    "expect": "Rejected order returns to draft with the comment; resubmission below the limit becomes approved without Management.",
+    "frs": [
+     "FR-SL-02",
+     "FR-ID-06"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P7-03",
+    "roles": [
+     "IS"
+    ],
+    "smoke": false,
+    "does": "Press Reserve units and pick four serials. In a second tab create another order and try to reserve one of the same serials.",
+    "expect": "First order holds the units; second attempt is refused with “already reserved”; only one active reservation per unit.",
+    "frs": [
+     "FR-SL-03",
+     "FR-IN-06"
+    ],
+    "assertions": [
+     "A-13"
+    ]
+   },
+   {
+    "id": "P7-04",
+    "roles": [
+     "IS"
+    ],
+    "smoke": true,
+    "does": "Create a dispatch. Scan a serial not reserved for this order, then the correct four; Mark picked; Dispatch.",
+    "expect": "Wrong serial refused; ledger dispatch rows; units dispatched; order dispatched; Finance notified “ready to invoice”.",
+    "frs": [
+     "FR-SL-04",
+     "FR-IN-01"
+    ],
+    "assertions": [
+     "A-29"
+    ]
+   },
+   {
+    "id": "P7-05",
+    "roles": [
+     "IS"
+    ],
+    "smoke": true,
+    "does": "Press Record handover with recipient name, phone and a signature.",
+    "expect": "Dispatch delivered; warranty created per unit starting today (12 months); delivery email to the account contact.",
+    "frs": [
+     "FR-SL-04",
+     "FR-WR-01"
+    ],
+    "assertions": [
+     "A-14",
+     "A-15"
+    ]
+   },
+   {
+    "id": "P7-06",
+    "roles": [
+     "FS"
+    ],
+    "smoke": true,
+    "does": "Open invoices to issue, create a tax invoice from the dispatch and press Issue with Email to contact ticked.",
+    "expect": "Invoice numbered; PDF totals add up; prices equal the order snapshot; email sent; journals for receivable, revenue, VAT and cost of sales exist.",
+    "frs": [
+     "FR-FN-01",
+     "FR-FN-07"
+    ],
+    "assertions": [
+     "A-10",
+     "A-23"
+    ]
+   },
+   {
+    "id": "P7-07",
+    "roles": [
+     "FS"
+    ],
+    "smoke": false,
+    "does": "Record a part payment by bank transfer and allocate; then try to allocate more than the balance; then record the remainder.",
+    "expect": "Invoice part_paid then paid; over-allocation blocked; journals post.",
+    "frs": [
+     "FR-FN-02"
+    ],
+    "assertions": [
+     "A-21"
+    ]
+   },
+   {
+    "id": "P7-08",
+    "roles": [
+     "IS"
+    ],
+    "smoke": false,
+    "does": "Create an order for Dept of Finance for 8 laptops (more than in stock). Submit, Reserve what exists, press Request build for the shortfall.",
+    "expect": "Reservations for available units; assembly order created for the shortfall; order awaiting_build; later (after build) the remaining units auto-reserve and the order becomes ready.",
+    "frs": [
+     "FR-SL-03",
+     "FR-PD-01"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P7-09",
+    "roles": [
+     "MG",
+     "IS"
+    ],
+    "smoke": false,
+    "does": "MG changes the list price of the laptop. IS opens the earlier order and creates a new order.",
+    "expect": "Earlier order and its invoice keep the old price; the new order uses the new price.",
+    "frs": [
+     "FR-SL-02",
+     "FR-CT-05"
+    ],
+    "assertions": [
+     "A-23"
+    ]
+   },
+   {
+    "id": "P7-10",
+    "roles": [
+     "FS",
+     "IS"
+    ],
+    "smoke": false,
+    "does": "FS puts the Registry account on hold; IS tries to create an order for it; FS reactivates.",
+    "expect": "Order creation blocked with the hold message; works again after reactivation.",
+    "frs": [
+     "FR-CT-07"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P7-11",
+    "roles": [
+     "IS"
+    ],
+    "smoke": false,
+    "does": "Cancel an approved order that has reservations.",
+    "expect": "Reason required; reservations released; units back in stock; cancellation audited.",
+    "frs": [
+     "FR-SL-01",
+     "FR-IN-06"
+    ],
+    "assertions": []
+   }
+  ]
+ },
+ {
+  "phase": 8,
+  "title": "Returns, transfers and adjustments",
+  "opens_when": "Dispatched units and stock exist.",
+  "checkpoint": [
+   "A-02",
+   "A-10",
+   "A-20",
+   "A-29"
+  ],
+  "steps": [
+   {
+    "id": "P8-01",
+    "roles": [
+     "IS",
+     "MG",
+     "FS"
+    ],
+    "smoke": false,
+    "does": "IS creates a return for one dispatched unit and submits; MG approves; IS receives it by scan and records the condition as damaged; FS creates the credit note.",
+    "expect": "Return requested, approved, received into quarantine; credit note linked to the invoice; journals post.",
+    "frs": [
+     "FR-SL-05",
+     "FR-FN-01"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P8-02",
+    "roles": [
+     "IS"
+    ],
+    "smoke": false,
+    "does": "Transfer 2 components from the main warehouse to the repair bench; ship; receive with one missing.",
+    "expect": "Transfer in_transit then received; shortfall asks for a reason and offers Create adjustment.",
+    "frs": [
+     "FR-IN-07"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P8-03",
+    "roles": [
+     "IS",
+     "MG"
+    ],
+    "smoke": false,
+    "does": "IS submits a write-off above 1,000 (MG approves) and one below 1,000.",
+    "expect": "Above limit: pending_approval then posted after MG; below limit: posted immediately; ledger and journals correct.",
+    "frs": [
+     "FR-IN-08",
+     "FR-ID-05"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P8-04",
+    "roles": [
+     "IS",
+     "QI"
+    ],
+    "smoke": false,
+    "does": "Run a cycle count of the finished-goods location with QI as witness.",
+    "expect": "Count matches system; accuracy figure recorded; no adjustment needed.",
+    "frs": [
+     "FR-IN-09"
+    ],
+    "assertions": []
+   }
+  ]
+ },
+ {
+  "phase": 9,
+  "title": "After-sales: warranty and repairs",
+  "opens_when": "Delivered units with active warranties (P7).",
+  "checkpoint": [
+   "A-10",
+   "A-14",
+   "A-28"
+  ],
+  "steps": [
+   {
+    "id": "P9-01",
+    "roles": [
+     "FS"
+    ],
+    "smoke": true,
+    "does": "Scan a delivered unit’s serial in the warranty register; read status, genealogy and supplier coverage; press Open ticket; assign to AT1.",
+    "expect": "Warranty active with correct dates; coverage shown per component; ticket received with SLA; AT1 notified.",
+    "frs": [
+     "FR-WR-01",
+     "FR-WR-02",
+     "FR-WR-03"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P9-02",
+    "roles": [
+     "AT1"
+    ],
+    "smoke": false,
+    "does": "Open the ticket: Start diagnosis, save diagnosis (faulty SSD, covered), Add part by scan, Consume parts, Start repair, Retest and record tests.",
+    "expect": "Ledger service-consume row; genealogy closes the old SSD and links the new one to the ticket; tests recorded.",
+    "frs": [
+     "FR-WR-03",
+     "FR-PD-09"
+    ],
+    "assertions": [
+     "A-28"
+    ]
+   },
+   {
+    "id": "P9-03",
+    "roles": [
+     "QI"
+    ],
+    "smoke": false,
+    "does": "Retest the repaired unit where required and record a pass.",
+    "expect": "Ticket allows Mark ready for collection after pass.",
+    "frs": [
+     "FR-WR-03"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P9-04",
+    "roles": [
+     "FS"
+    ],
+    "smoke": true,
+    "does": "Mark ready for collection, then Record collection.",
+    "expect": "Email to the account contact; ticket closed; covered repair posts at zero charge with cost captured; journals post.",
+    "frs": [
+     "FR-WR-03",
+     "FR-WR-04"
+    ],
+    "assertions": [
+     "A-10"
+    ]
+   },
+   {
+    "id": "P9-05",
+    "roles": [
+     "FS",
+     "PI"
+    ],
+    "smoke": false,
+    "does": "Open supplier RMA from the repaired ticket (faulty SSD within supplier warranty) and take it through to credit.",
+    "expect": "RMA linked to ticket; credit recorded.",
+    "frs": [
+     "FR-WR-05",
+     "FR-PR-05"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P9-06",
+    "roles": [
+     "FS",
+     "AT1"
+    ],
+    "smoke": false,
+    "does": "Orchestrator backdates another unit’s warranty so it is expired. FS opens a ticket; the system shows expired; FS sets not covered, creates a quote, sends it, records approval; AT1 repairs; FS collects and invoices.",
+    "expect": "Billable path: quote PDF and email; approval recorded; repair; invoice created from the ticket.",
+    "frs": [
+     "FR-WR-03",
+     "FR-WR-04"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P9-07",
+    "roles": [
+     "FS",
+     "MG"
+    ],
+    "smoke": false,
+    "does": "FS requests goodwill cover on a third expired unit; MG approves from the inbox.",
+    "expect": "Approval recorded; coverage goodwill; repair proceeds at zero charge.",
+    "frs": [
+     "FR-WR-04",
+     "FR-ID-05"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P9-08",
+    "roles": [
+     "FS"
+    ],
+    "smoke": false,
+    "does": "Open a ticket for a non-UPSA device (description and serial typed in) and run it as a paid repair.",
+    "expect": "Ticket works without genealogy; invoice produced.",
+    "frs": [
+     "FR-WR-03"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P9-09",
+    "roles": [
+     "MG"
+    ],
+    "smoke": false,
+    "does": "Extend one warranty with a reason; void another.",
+    "expect": "End date moves or status void; both audited; lookup reflects the change.",
+    "frs": [
+     "FR-WR-01"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P9-10",
+    "roles": [
+     "FS",
+     "MG"
+    ],
+    "smoke": false,
+    "does": "Orchestrator advances the clock past an open ticket’s SLA.",
+    "expect": "SLA at-risk then breached notifications reach FS and MG once each.",
+    "frs": [
+     "FR-WR-03",
+     "FR-NT-01"
+    ],
+    "assertions": [
+     "A-18"
+    ]
+   }
+  ]
+ },
+ {
+  "phase": 10,
+  "title": "Finance and month-end close",
+  "opens_when": "Invoices, payments and receipts posted.",
+  "checkpoint": [
+   "A-09",
+   "A-10",
+   "A-17",
+   "A-21"
+  ],
+  "steps": [
+   {
+    "id": "P10-01",
+    "roles": [
+     "AT1",
+     "IS",
+     "MG",
+     "FS"
+    ],
+    "smoke": false,
+    "does": "AT1 submits a small expense (below 500); IS submits one above 500; MG approves the second; FS marks both paid.",
+    "expect": "Below limit approves immediately; above limit pending then approved; paid links a payment; AT1 sees only own expenses.",
+    "frs": [
+     "FR-FN-03",
+     "FR-ID-05"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P10-02",
+    "roles": [
+     "MG",
+     "FS"
+    ],
+    "smoke": false,
+    "does": "Set a budget for a cost centre; open budget versus actual and drill into the lines behind a figure.",
+    "expect": "Actual equals the ledger lines; drill-down lists the entries.",
+    "frs": [
+     "FR-FN-04"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P10-03",
+    "roles": [
+     "FS"
+    ],
+    "smoke": false,
+    "does": "Create a manual journal that does not balance, then a balanced one; reverse it.",
+    "expect": "Save is disabled while unbalanced; balanced entry posts; reversal posts in the current period.",
+    "frs": [
+     "FR-FN-05"
+    ],
+    "assertions": [
+     "A-09"
+    ]
+   },
+   {
+    "id": "P10-04",
+    "roles": [
+     "FS"
+    ],
+    "smoke": false,
+    "does": "Record a receipt without allocating; confirm it appears under Unallocated; allocate it.",
+    "expect": "Unallocated list shows it, then clears after allocation.",
+    "frs": [
+     "FR-FN-02"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P10-05",
+    "roles": [
+     "FS",
+     "MG"
+    ],
+    "smoke": true,
+    "does": "Leave one supplier invoice in draft. Open the close checklist, see it fail, fix the item, Request close; MG approves.",
+    "expect": "Checklist names the failing check with owner and link; after fix it passes; period closes after MG approval; all stock and finance users notified.",
+    "frs": [
+     "FR-FN-05",
+     "FR-ID-05"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P10-06",
+    "roles": [
+     "FS"
+    ],
+    "smoke": false,
+    "does": "Try to issue an invoice dated inside the closed period.",
+    "expect": "Blocked with “accounting period is closed”; no entry created.",
+    "frs": [
+     "FR-FN-05"
+    ],
+    "assertions": [
+     "A-17"
+    ]
+   },
+   {
+    "id": "P10-07",
+    "roles": [
+     "FS"
+    ],
+    "smoke": false,
+    "does": "Export journals, invoices and payments for the period.",
+    "expect": "Files download; Verifier’s totals match the database exactly.",
+    "frs": [
+     "FR-FN-07"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P10-08",
+    "roles": [
+     "FS",
+     "MG"
+    ],
+    "smoke": false,
+    "does": "Request reopen with a reason; MG approves; make a correction; close again.",
+    "expect": "Period open then closed; the whole sequence is audited.",
+    "frs": [
+     "FR-FN-05",
+     "FR-ID-04"
+    ],
+    "assertions": []
+   }
+  ]
+ },
+ {
+  "phase": 11,
+  "title": "Management oversight and audit",
+  "opens_when": "Phases 1 to 10 complete.",
+  "checkpoint": [
+   "A-12",
+   "A-19"
+  ],
+  "steps": [
+   {
+    "id": "P11-01",
+    "roles": [
+     "MG"
+    ],
+    "smoke": false,
+    "does": "Open the home dashboard and read every widget; click each to its destination.",
+    "expect": "Counts equal the Verifier’s queries; every link opens the right filtered page.",
+    "frs": [
+     "FR-RP-01"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P11-02",
+    "roles": [
+     "MG"
+    ],
+    "smoke": false,
+    "does": "Run margin per model, supplier performance, warranty exposure, receivables ageing and VAT summary; export each.",
+    "expect": "Totals reconcile to the database; exports open correctly and use the same filters.",
+    "frs": [
+     "FR-RP-02",
+     "FR-RP-03",
+     "FR-FN-08"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P11-03",
+    "roles": [
+     "MG",
+     "SA"
+    ],
+    "smoke": false,
+    "does": "Pick ten random actions from the run log and find each in /admin/audit.",
+    "expect": "Each exists with actor, time and before/after values; encrypted fields never appear.",
+    "frs": [
+     "FR-ID-04"
+    ],
+    "assertions": [
+     "A-12"
+    ]
+   },
+   {
+    "id": "P11-04",
+    "roles": [
+     "SA"
+    ],
+    "smoke": false,
+    "does": "Open /admin/jobs and review failed jobs and outbox backlog; export the audit log.",
+    "expect": "No failed or stuck jobs; export contains the run’s entries; the export itself is logged.",
+    "frs": [
+     "FR-ID-04"
+    ],
+    "assertions": [
+     "A-19"
+    ]
+   }
+  ]
+ },
+ {
+  "phase": 12,
+  "title": "Security, permissions and concurrency",
+  "opens_when": "Run complete (or at any time on a reset copy).",
+  "checkpoint": [
+   "A-08",
+   "A-13",
+   "A-25",
+   "A-26",
+   "A-27"
+  ],
+  "steps": [
+   {
+    "id": "P12-01",
+    "roles": [
+     "ALL"
+    ],
+    "smoke": false,
+    "does": "Each role agent attempts its list of forbidden actions (section 9 matrix) through the interface and by typing addresses.",
+    "expect": "Controls hidden or disabled; addresses show 403; nothing changes in the database.",
+    "frs": [
+     "FR-ID-02"
+    ],
+    "assertions": [
+     "A-25"
+    ]
+   },
+   {
+    "id": "P12-02",
+    "roles": [
+     "INTRUDER"
+    ],
+    "smoke": false,
+    "does": "Using each role’s token, call forbidden API endpoints and attempt direct table reads as the browser role.",
+    "expect": "Every forbidden call returns 403; encrypted columns are not readable; no cross-role data in responses.",
+    "frs": [
+     "FR-ID-02"
+    ],
+    "assertions": [
+     "A-25",
+     "A-26"
+    ]
+   },
+   {
+    "id": "P12-03",
+    "roles": [
+     "IS"
+    ],
+    "smoke": false,
+    "does": "Two IS sessions try to reserve the last available unit at the same moment; double-click Post receipt; press Approve in two tabs.",
+    "expect": "One wins; the other gets a clear refusal; no duplicate rows.",
+    "frs": [
+     "FR-IN-06"
+    ],
+    "assertions": [
+     "A-13",
+     "A-27"
+    ]
+   },
+   {
+    "id": "P12-04",
+    "roles": [
+     "PI"
+    ],
+    "smoke": false,
+    "does": "Two sessions edit the same PO; the second saves after the first.",
+    "expect": "Second sees “Updated by [name]” with Reload and Compare; nothing silently overwritten.",
+    "frs": [
+     "FR-ID-04"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P12-05",
+    "roles": [
+     "QI"
+    ],
+    "smoke": false,
+    "does": "Enter a wrong password five times; then a wrong authenticator code five times.",
+    "expect": "Account locks for 15 minutes with a generic message; Super Admin is alerted; a second QI agent session cannot bypass.",
+    "frs": [
+     "FR-ID-01"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P12-06",
+    "roles": [
+     "SA"
+    ],
+    "smoke": false,
+    "does": "Suspend an active user while that user is mid-session; revoke sessions; reset the authenticator.",
+    "expect": "The user is signed out within a minute and cannot sign in; reset forces re-enrolment; Management notified.",
+    "frs": [
+     "FR-ID-03"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P12-07",
+    "roles": [
+     "IS",
+     "PI",
+     "FS"
+    ],
+    "smoke": false,
+    "does": "Enter hostile and awkward data in text fields: script tags, SQL fragments, very long strings, Twi and accented characters, zero and negative quantities, huge amounts, extra decimals.",
+    "expect": "No script runs; validation messages are clear; Unicode stored and printed correctly; numeric limits enforced.",
+    "frs": [
+     "FR-ID-04"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P12-08",
+    "roles": [
+     "PI",
+     "IS"
+    ],
+    "smoke": false,
+    "does": "Upload files of the wrong type, oversize files and the EICAR test file to documents, receipts and tickets.",
+    "expect": "Wrong or infected files blocked; oversize refused with message; no file served without a signed link.",
+    "frs": [
+     "FR-IM-07"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P12-09",
+    "roles": [
+     "IS"
+    ],
+    "smoke": false,
+    "does": "Start a receipt post, switch the browser offline mid-click, restore the connection, and refresh.",
+    "expect": "No duplicate ledger rows; the page shows the true state after reload.",
+    "frs": [
+     "FR-IN-02"
+    ],
+    "assertions": [
+     "A-27"
+    ]
+   },
+   {
+    "id": "P12-10",
+    "roles": [
+     "AT1"
+    ],
+    "smoke": false,
+    "does": "Open the address of a unit assigned to AT2, and the cost fields of a unit.",
+    "expect": "Access denied for AT2’s unit; costs hidden for technicians.",
+    "frs": [
+     "FR-ID-02"
+    ],
+    "assertions": [
+     "A-25"
+    ]
+   },
+   {
+    "id": "P12-11",
+    "roles": [
+     "QI",
+     "FS"
+    ],
+    "smoke": false,
+    "does": "Try to view a licence key as QI and FS; open a software licence through the API.",
+    "expect": "No key shown to roles without licence.view; the API response omits it.",
+    "frs": [
+     "FR-PD-07"
+    ],
+    "assertions": [
+     "A-26"
+    ]
+   }
+  ]
+ },
+ {
+  "phase": 13,
+  "title": "Cross-cutting quality checks",
+  "opens_when": "Phases 1 to 11 complete.",
+  "checkpoint": [
+   "A-18",
+   "A-19"
+  ],
+  "steps": [
+   {
+    "id": "P13-01",
+    "roles": [
+     "ORCH"
+    ],
+    "smoke": false,
+    "does": "Compare every expected notification in section 11 against the notification table and the mail sink.",
+    "expect": "Each expected notification exists exactly once per recipient within 60 seconds; no unexpected recipients.",
+    "frs": [
+     "FR-NT-01"
+    ],
+    "assertions": [
+     "A-18"
+    ]
+   },
+   {
+    "id": "P13-02",
+    "roles": [
+     "ORCH"
+    ],
+    "smoke": false,
+    "does": "Open every generated PDF (PO, GRN, shipment summary, dispatch note, invoice, credit note, warranty certificate, labels, quote).",
+    "expect": "Letterhead and numbers correct; totals add up; serials readable and scannable; no placeholder text; QR opens the record only after sign-in.",
+    "frs": [
+     "FR-FN-01",
+     "FR-IN-11"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P13-03",
+    "roles": [
+     "ORCH"
+    ],
+    "smoke": false,
+    "does": "Open every email in the sink.",
+    "expect": "No login or token links except invitations and resets; correct names, numbers and amounts; no personal data beyond need.",
+    "frs": [
+     "FR-NT-01"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P13-04",
+    "roles": [
+     "ORCH"
+    ],
+    "smoke": false,
+    "does": "Run an automated accessibility scan and a keyboard-only pass on twelve key pages.",
+    "expect": "No serious or critical violations; every primary flow completable by keyboard; focus visible.",
+    "frs": [
+     "FR-ID-01"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P13-05",
+    "roles": [
+     "ORCH"
+    ],
+    "smoke": false,
+    "does": "Load the volume seed and time list pages, dashboards, a 100,000-row export and a landed-cost run.",
+    "expect": "Lists ≤ 2 s; dashboards ≤ 2 s; export job ≤ 30 s; no timeouts.",
+    "frs": [
+     "FR-RP-03"
+    ],
+    "assertions": []
+   },
+   {
+    "id": "P13-06",
+    "roles": [
+     "ORCH"
+    ],
+    "smoke": false,
+    "does": "Restore the previous night’s backup into a scratch project and run assertions A-02, A-09 and A-20.",
+    "expect": "Restore completes within the recovery objective and assertions pass.",
+    "frs": [
+     "FR-ID-04"
+    ],
+    "assertions": []
+   }
+  ]
+ }
+]

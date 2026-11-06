@@ -48,7 +48,7 @@ export default async function BenchWorkspacePage({
         cs.serial_no as component_serial_no,
         l.lot_no
       from prod.unit_components uc
-      join catalog.items i on i.id = uc.component_item_id
+      join catalog.items i on i.id = uc.item_id
       left join inv.component_serials cs on cs.id = uc.component_serial_id
       left join inv.lots l on l.id = uc.lot_id
       where uc.unit_id = $1
@@ -60,11 +60,11 @@ export default async function BenchWorkspacePage({
         tr.id,
         tr.test_type,
         tr.result,
-        tr.notes,
+        coalesce(tr.tool, '') as notes,
         tr.created_at::text as created_at,
         p.full_name as tester_name
       from prod.test_runs tr
-      left join core.profiles p on p.id = tr.tester_id
+      left join core.profiles p on p.id = tr.run_by
       where tr.unit_id = $1
       order by tr.created_at desc
     `, [id]),
@@ -72,18 +72,18 @@ export default async function BenchWorkspacePage({
     db.query(`
       select 
         us.id,
-        us.step_no,
+        rs.step_no,
         us.status,
         us.started_at::text as started_at,
         us.completed_at::text as completed_at,
-        us.duration_minutes,
+        us.minutes as duration_minutes,
         rs.name as step_name,
-        rs.description as step_description,
+        rs.instructions as step_description,
         rs.is_mandatory
       from prod.unit_steps us
-      join prod.routing_steps rs on rs.id = us.routing_step_id
+      join prod.routing_steps rs on rs.id = us.step_id
       where us.unit_id = $1
-      order by us.step_no asc
+      order by rs.step_no asc
     `, [id]).catch(() => ({ rows: [] })),
   ]);
 

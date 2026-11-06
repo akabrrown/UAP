@@ -1,0 +1,13 @@
+{
+ "step_id": "P4-05",
+ "role": "IS",
+ "status": "pass|partial|fail|blocked|missing|assisted|skipped",
+ "started_at": "",
+ "ended_at": "",
+ "page": "/inventory/receipts/[id]",
+ "observed": "",
+ "evidence": [],
+ "doc_refs": {},
+ "findings": [],
+ "assisted": false
+}

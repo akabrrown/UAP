@@ -123,7 +123,7 @@ export default async function ShipmentDetailPage({
         al.action,
         al.at::text as created_at,
         coalesce(p.full_name, 'System') as actor_name,
-        al.new_data
+        al.after as new_data
       from core.audit_log al
       left join core.profiles p on p.id = al.actor_id
       where al.entity_id = $1

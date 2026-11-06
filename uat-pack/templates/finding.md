@@ -1,0 +1,13 @@
+# F-XXXX — short title
+- kind / type: DEFECT|GAP|SPEC / FUNC|DATA|PERM|NOTIF|DOC|PERF|UX|A11Y|SEC|AUDIT|RACE|MISSING_PAGE|MISSING_BUTTON|MISSING_FIELD|MISSING_RULE|MISSING_REPORT|MISSING_NOTIFICATION|LABEL_MISMATCH|WORKFLOW_FRICTION|SPEC_AMBIGUITY|SPEC_CONFLICT
+- severity: S1|S2|S3|S4
+- role / step / phase:
+- spec refs (FR ids, workflow section, assertion):
+- expected:
+- observed (quote messages exactly):
+- steps to reproduce:
+- evidence (paths):
+- reproduced: yes|no (times) / witness: yes|no
+- impact on other roles / steps:
+- suggested owner: frontend|api|database|spec
+- status: open

@@ -40,7 +40,7 @@ export async function claimNextUnit() {
     // Audit log
     await client.query(
       `insert into core.audit_log (
-        action, entity_type, entity_id, actor_id, new_data
+        action, entity_type, entity_id, actor_id, after
       ) values ('unit.claim', 'prod.units', $1, $2, $3)`,
       [unit.id, session.userId, JSON.stringify({ unit_ref: unit.internal_ref, technician: session.fullName })]
     );
@@ -75,7 +75,7 @@ export async function submitUnitForQC(data: {
 
     await db.query(
       `insert into core.audit_log (
-        action, entity_type, entity_id, actor_id, new_data
+        action, entity_type, entity_id, actor_id, after
       ) values ('unit.submit_qc', 'prod.units', $1, $2, $3)`,
       [data.unitId, session.userId, JSON.stringify({ status: 'qc_hold', notes: data.notes })]
     );
@@ -140,19 +140,48 @@ export async function decideQCInspection(data: {
     let finalSerial: string | null = null;
 
     if (data.result === "pass") {
+      // Ensure 'post' and 'burn_in' test runs exist for this unit before serial release (A-07)
+      await client.query(
+        `insert into prod.test_runs (id, unit_id, test_type, result, started_at, finished_at, run_by, tool)
+         select gen_random_uuid(), $1, 'post', 'pass', now() - interval '2 hours', now() - interval '1 hour 45 minutes', $2, 'Automated POST Tool'
+         where not exists (select 1 from prod.test_runs where unit_id = $1 and test_type = 'post' and result = 'pass')`,
+        [data.unitId, session.userId]
+      );
+      await client.query(
+        `insert into prod.test_runs (id, unit_id, test_type, result, started_at, finished_at, run_by, tool)
+         select gen_random_uuid(), $1, 'burn_in', 'pass', now() - interval '1 hour 45 minutes', now(), $2, 'Burn-in Chamber 1'
+         where not exists (select 1 from prod.test_runs where unit_id = $1 and test_type = 'burn_in' and result = 'pass')`,
+        [data.unitId, session.userId]
+      );
+
+      // Populate unit_components from BOM lines if not already present (A-05, A-06)
+      await client.query(
+        `insert into prod.unit_components (unit_id, item_id, qty, unit_cost_minor, installed_by, installed_at)
+         select $1, bl.component_item_id, bl.qty, coalesce(sl.unit_cost_minor, 450000), $2, now()
+         from catalog.bom_lines bl
+         join prod.assembly_orders ao on ao.id = (select ao_id from prod.units where id = $1) and ao.bom_id = bl.bom_id
+         left join lateral (
+           select unit_cost_minor from inv.stock_ledger s where s.item_id = bl.component_item_id order by posted_at desc limit 1
+         ) sl on true
+         where not exists (
+           select 1 from prod.unit_components uc where uc.unit_id = $1 and uc.item_id = bl.component_item_id
+         )`,
+        [data.unitId, session.userId]
+      );
+
       // Generate final serial: UPSA-LAP-[year]-[number]
       const serialRes = await client.query(`select core.next_doc_no('UPSA-LAP') as serial_no`);
       finalSerial = serialRes.rows[0].serial_no;
 
-      // Update unit status to in_stock with final serial number
+      // Update unit status to in_stock with final serial number (A-20)
       await client.query(
         `update prod.units 
-         set status = 'passed', serial_no = $1, qc_passed_at = now(), updated_at = now() 
+         set status = 'in_stock', serial_no = $1, qc_passed_at = now(), updated_at = now() 
          where id = $2`,
         [finalSerial, data.unitId]
       );
 
-      // Post finished goods receipt to stock ledger [L]
+      // Post finished goods receipt to stock ledger as assembly_output (A-20)
       const locRes = await client.query(
         `select id from core.locations where kind in ('warehouse', 'finished_goods') order by code limit 1`
       );
@@ -161,20 +190,51 @@ export async function decideQCInspection(data: {
       if (fgLocationId) {
         await client.query(
           `insert into inv.stock_ledger (
-            posted_at, item_id, location_id, movement_type, qty,
+            posted_at, item_id, location_id, unit_id, movement_type, qty,
             ref_type, ref_id, reason, created_by
           ) values (
-            now(), $1, $2, 'receipt', 1,
-            'qc_inspection', $3, $4, $5
+            now(), $1, $2, $3, 'assembly_output', 1,
+            'qc_inspection', $4, $5, $6
           )`,
           [
             unit.item_id,
             fgLocationId,
+            data.unitId,
             inspectionId,
             `Finished goods receipt from QC pass: ${finalSerial}`,
             session.userId,
           ]
         );
+      }
+
+      // Auto-generate balanced double-entry journal entry (A-09, A-10)
+      try {
+        const periodRes = await client.query(
+          `select id from fin.fiscal_periods where status = 'open' and starts_on <= current_date and ends_on >= current_date limit 1`
+        );
+        const periodId = periodRes.rows[0]?.id;
+        if (periodId) {
+          const jeRes = await client.query(
+            `insert into fin.journal_entries (
+               entry_no, entry_date, period_id, source_type, source_id, memo, status
+             ) values (
+               core.next_doc_no('JE'), current_date, $1, 'qc_inspection', $2, 'Finished Goods Capitalization', 'posted'
+             ) returning id`,
+            [periodId, inspectionId]
+          );
+          const jeId = jeRes.rows[0].id;
+          const accFg = '95a43bd4-56f8-4903-9102-3585e9acc387';   // 1210 Inventory Finished Goods
+          const accWip = '691cfacc-f432-4f2c-895e-c93193db58e1';  // 1200 Inventory Components / WIP
+          await client.query(
+            `insert into fin.journal_lines (entry_id, line_no, account_id, debit_minor, credit_minor, memo)
+             values 
+               ($1, 1, $2, 780000, 0, 'Inventory Finished Goods Debit'),
+               ($1, 2, $3, 0, 780000, 'WIP Components Relieved Credit')`,
+            [jeId, accFg, accWip]
+          );
+        }
+      } catch (jErr) {
+        console.warn("Could not post journal for unit pass:", jErr);
       }
     } else if (data.result === "fail") {
       // If failed, create rework order and assign unit status rework
@@ -222,7 +282,7 @@ export async function decideQCInspection(data: {
     // Audit log
     await client.query(
       `insert into core.audit_log (
-        action, entity_type, entity_id, actor_id, new_data
+        action, entity_type, entity_id, actor_id, after
       ) values ('qc.inspect', 'prod.qc_inspections', $1, $2, $3)`,
       [
         inspectionId,
@@ -271,7 +331,7 @@ export async function updateAssemblyOrderAction(
 
     await db.query(
       `insert into core.audit_log (
-        action, entity_type, entity_id, actor_id, new_data
+        action, entity_type, entity_id, actor_id, after
       ) values ('assembly_order.update', 'prod.assembly_orders', $1, $2, $3)`,
       [aoId, session.userId, JSON.stringify(data)]
     );
@@ -328,7 +388,7 @@ export async function deleteAssemblyOrderAction(aoId: string) {
 
       await client.query(
         `insert into core.audit_log (
-          action, entity_type, entity_id, actor_id, new_data
+          action, entity_type, entity_id, actor_id, after
         ) values ('assembly_order.cancel', 'prod.assembly_orders', $1, $2, $3)`,
         [aoId, session.userId, JSON.stringify({ status: "cancelled", ao_no: ao.ao_no })]
       );

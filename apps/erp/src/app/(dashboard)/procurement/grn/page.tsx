@@ -3,31 +3,23 @@ import { Plus, Search, Filter, PackageCheck, Truck, Building2 } from "lucide-rea
 import Link from "next/link";
 import { requireAnyScope } from "@/lib/session";
 
-import { unstable_cache } from "next/cache";
-
-const getGoodsReceipts = unstable_cache(
-  async () => {
-    const result = await db.query(`
-      select grn.id, grn.grn_no, grn.status, grn.received_at, grn.delivery_note_no,
-             s.name as supplier_name,
-             l.name as location_name,
-             po.po_no
-      from proc.goods_receipts grn
-      left join proc.suppliers s on s.id = grn.supplier_id
-      left join core.locations l on l.id = grn.location_id
-      left join proc.purchase_orders po on po.id = grn.po_id
-      order by grn.grn_no desc
-    `);
-    return result.rows;
-  },
-  ["goods-receipts-list"],
-  { tags: ["procurement", "inventory"] }
-);
+export const dynamic = "force-dynamic";
 
 export default async function GoodsReceiptsPage() {
   await requireAnyScope(["inventory.receive", "procurement.write"]);
 
-  const receipts = await getGoodsReceipts();
+  const result = await db.query(`
+    select grn.id, grn.grn_no, grn.status, grn.received_at, grn.delivery_note_no,
+           s.name as supplier_name,
+           l.name as location_name,
+           po.po_no
+    from proc.goods_receipts grn
+    left join proc.suppliers s on s.id = grn.supplier_id
+    left join core.locations l on l.id = grn.location_id
+    left join proc.purchase_orders po on po.id = grn.po_id
+    order by grn.grn_no desc
+  `);
+  const receipts = result.rows;
 
   return (
     <div className="space-y-6">
